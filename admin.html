@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0e0718" />
+<meta name="robots" content="noindex" />
+<title>Karaoke Night — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+
+  /* Login */
+  #pantallaClave { max-width: 380px; margin: 0 auto; padding-top: calc(12vh + env(safe-area-inset-top)); text-align: center; }
+  #pantallaClave .logo {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    border-radius: 20px;
+    background: var(--grad);
+    font-size: 1.8rem;
+    box-shadow: 0 8px 30px rgba(255, 45, 120, 0.4);
+  }
+  #pantallaClave h1 { margin: 0; font-size: 1.6rem; font-weight: 800; }
+  #pantallaClave .sub { margin: 6px 0 24px; color: var(--muted); }
+  #pantallaClave .card { text-align: left; }
+  .mensaje-error { margin: 10px 0 0; color: #ff9a9a; font-size: 0.88rem; text-align: center; }
+
+  /* Formularios */
+  label { display: block; margin-bottom: 6px; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+  input {
+    width: 100%;
+    min-height: 48px;
+    margin-bottom: 14px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: #120a20;
+    color: var(--text);
+    font: inherit;
+    font-size: 1rem; /* 16px: evita el zoom automático de iOS */
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input:focus { outline: none; border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(255, 210, 63, 0.18); }
+  input::placeholder { color: var(--dim); }
+  .fila-campos { display: flex; gap: 12px; }
+  .fila-campos > div { flex: 1; min-width: 0; }
+  .fila-campos .chico { flex: 0 0 96px; }
+  .acciones-form { display: flex; gap: 10px; flex-wrap: wrap; }
+  .acciones-form .btn { flex: 1 1 160px; }
+
+  /* Cabecera del panel */
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: calc(16px + env(safe-area-inset-top)) 0 4px;
+  }
+  .top h1 { margin: 0; font-size: 1.25rem; font-weight: 800; }
+  .top h1 small { display: block; font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+  .top .links { display: flex; gap: 8px; }
+
+  /* Nivel 1: control de escena */
+  .escena {
+    margin-top: 16px;
+    padding: 18px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 45, 120, 0.35);
+    background: linear-gradient(160deg, #2a1548, var(--card) 75%);
+    box-shadow: 0 0 36px rgba(255, 45, 120, 0.15);
+  }
+  .escena-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .escena .nombre { font-size: 1.6rem; font-weight: 800; line-height: 1.1; overflow-wrap: anywhere; }
+  .escena .cancion { margin-top: 4px; color: #e3d6ff; overflow-wrap: anywhere; }
+  .escena .vacia { color: var(--muted); }
+  .escena .btn { margin-top: 16px; width: 100%; min-height: 54px; font-size: 1.02rem; }
+  .escena .btn small { font-weight: 500; opacity: 0.75; }
+
+  /* Lista */
+  .lista { display: flex; flex-direction: column; gap: 10px; }
+  .participante {
+    padding: 14px;
+    border-radius: var(--radius);
+    background: var(--card);
+    border: 1px solid var(--line);
+    transition: opacity 0.2s, border-color 0.2s;
+  }
+  .participante.es-cantando { border-color: rgba(255, 45, 120, 0.5); background: linear-gradient(160deg, #26123f, var(--card)); }
+  .participante.es-listo { opacity: 0.6; }
+  .participante.editando { border-color: var(--accent2); box-shadow: 0 0 0 1px var(--accent2); opacity: 1; }
+  .participante.ocupado { opacity: 0.45; pointer-events: none; }
+  .participante .cabeza { display: flex; align-items: flex-start; gap: 12px; }
+  .participante .num {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .participante.es-cantando .num { background: var(--grad); color: #1a0f2b; }
+  .participante .datos { flex: 1; min-width: 0; }
+  .participante .nombre { font-weight: 700; overflow-wrap: anywhere; }
+  .participante .cancion { color: var(--muted); font-size: 0.88rem; overflow-wrap: anywhere; }
+  .participante .badge { margin-top: 2px; }
+  .participante .acciones { display: flex; gap: 8px; margin-top: 12px; }
+  .participante .acciones .btn { flex: 1; }
+  .participante .acciones .btn-icono { flex: 0 0 46px; padding: 0; }
+
+  .vacia-lista { padding: 28px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: var(--radius); }
+
+  /* Resultados */
+  .ranking { display: flex; flex-direction: column; gap: 10px; }
+  .puesto { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 4px 10px; }
+  .puesto .medalla { font-size: 1.15rem; text-align: center; color: var(--muted); font-weight: 700; font-size: 0.9rem; }
+  .puesto .medalla.top { font-size: 1.2rem; }
+  .puesto .quien { min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+  .puesto .cuantos { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .puesto .barra { grid-column: 2 / 4; height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+  .puesto .barra > div { height: 100%; border-radius: inherit; background: var(--grad); transition: width 0.7s var(--ease); }
+  .puesto:first-child .quien { color: var(--accent2); }
+  .resultados-pie { margin-top: 14px; font-size: 0.8rem; color: var(--muted); display: flex; justify-content: space-between; }
+  .chip-votos { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+
+  .sk-part { padding: 14px; }
+  .sk-part .cabeza { display: flex; gap: 12px; align-items: center; }
+
+  @media (min-width: 560px) {
+    .participante { display: flex; align-items: center; gap: 12px; }
+    .participante .cabeza { flex: 1; min-width: 0; }
+    .participante .acciones { margin-top: 0; }
+    .participante .acciones .btn { flex: 0 0 auto; }
+  }
+</style>
+</head>
+<body>
+  <div class="barra-carga" id="barraCarga"></div>
+
+  <main>
+    <!-- Login -->
+    <section id="pantallaClave" class="oculto">
+      <div class="logo entra" aria-hidden="true">🔒</div>
+      <h1 class="entra" style="--i: 1">Panel de admin</h1>
+      <p class="sub entra" style="--i: 2">Ingresá la clave para administrar la competencia.</p>
+      <form class="card entra" style="--i: 3" id="formClave">
+        <label for="claveInput">Clave de admin</label>
+        <input id="claveInput" type="password" autocomplete="current-password" placeholder="••••••••" />
+        <button class="btn btn-primario btn-ancho" id="btnEntrar" type="submit"><span>Entrar</span></button>
+        <p class="mensaje-error oculto" id="mensajeClave" role="alert"></p>
+      </form>
+    </section>
+
+    <!-- Panel -->
+    <section id="pantallaAdmin" class="oculto">
+      <header class="top">
+        <h1>🎤 Karaoke Night <small>Panel de admin</small></h1>
+        <div class="links">
+          <a class="btn btn-secundario btn-chico" href="./" target="_blank" rel="noopener"><span>Pantalla ↗</span></a>
+          <button class="btn btn-secundario btn-chico" id="btnSalir" type="button"><span>Salir</span></button>
+        </div>
+      </header>
+
+      <section class="escena" id="escena" aria-live="polite">
+        <div class="skeleton" style="background: transparent; border: none">
+          <div class="sk-linea" style="width: 30%; margin-bottom: 16px"></div>
+          <div class="sk-linea" style="width: 70%; height: 22px; margin-bottom: 10px"></div>
+          <div class="sk-linea" style="width: 45%; margin-bottom: 20px"></div>
+          <div class="sk-linea" style="height: 54px; border-radius: 12px"></div>
+        </div>
+      </section>
+
+      <h2 class="seccion">Votos del público <span class="cuenta" id="totalVotos">…</span></h2>
+      <section class="card" id="resultados" aria-live="polite">
+        <div class="sk-linea" style="width: 60%; margin-bottom: 10px"></div>
+        <div class="sk-linea" style="height: 8px; margin-bottom: 18px"></div>
+        <div class="sk-linea" style="width: 45%; margin-bottom: 10px"></div>
+        <div class="sk-linea" style="height: 8px"></div>
+      </section>
+
+      <h2 class="seccion" id="tituloForm">Agregar participante</h2>
+      <form class="card" id="formParticipante">
+        <input type="hidden" id="idEditando" />
+        <label for="nombreInput">Nombre</label>
+        <input id="nombreInput" required maxlength="80" autocomplete="off" placeholder="Ej: Ana Pérez" />
+        <div class="fila-campos">
+          <div>
+            <label for="cancionInput">Canción</label>
+            <input id="cancionInput" required maxlength="120" autocomplete="off" placeholder="Canción — Artista" />
+          </div>
+          <div class="chico">
+            <label for="ordenInput">Orden</label>
+            <input id="ordenInput" type="number" inputmode="numeric" min="1" placeholder="—" />
+          </div>
+        </div>
+        <div class="acciones-form">
+          <button type="submit" class="btn btn-primario" id="btnGuardar"><span>Agregar participante</span></button>
+          <button type="button" class="btn btn-secundario oculto" id="btnCancelarEdicion"><span>Cancelar</span></button>
+        </div>
+      </form>
+
+      <h2 class="seccion">Participantes <span class="cuenta" id="cuenta">…</span></h2>
+      <div class="lista" id="lista">
+        <div class="skeleton sk-part"><div class="cabeza"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 50%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 32%"></div></div></div></div>
+        <div class="skeleton sk-part"><div class="cabeza"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 60%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 40%"></div></div></div></div>
+        <div class="skeleton sk-part"><div class="cabeza"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 42%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 30%"></div></div></div></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const pantallaClave = $("pantallaClave");
+    const pantallaAdmin = $("pantallaAdmin");
+    const formClave = $("formClave");
+    const claveInput = $("claveInput");
+    const btnEntrar = $("btnEntrar");
+    const mensajeClave = $("mensajeClave");
+
+    let clave = sessionStorage.getItem("karaoke_clave") || "";
+    let participantes = [];
+    let votos = new Map();
+    let anchosAnteriores = new Map();
+    let suscrito = false;
+    const animador = crearAnimador();
+
+    // ---------- Acceso ----------
+    async function verificar(c) {
+      const { data, error } = await conCarga(supabaseClient.rpc("verificar_clave", { p_clave: c }));
+      if (error) throw error;
+      return data === true;
+    }
+
+    function mostrarLogin(mensaje) {
+      pantallaAdmin.classList.add("oculto");
+      pantallaClave.classList.remove("oculto");
+      if (mensaje) {
+        mensajeClave.textContent = mensaje;
+        mensajeClave.classList.remove("oculto");
+      }
+      claveInput.focus();
+    }
+
+    function mostrarPanel() {
+      pantallaClave.classList.add("oculto");
+      pantallaAdmin.classList.remove("oculto");
+      cargar();
+      if (!suscrito) {
+        suscrito = true;
+        suscribirCambios("participantes-admin", cargar);
+        // Los votos no viajan por Realtime (la tabla es privada): se consultan cada 5 s.
+        setInterval(() => {
+          if (clave && document.visibilityState === "visible" && !pantallaAdmin.classList.contains("oculto")) {
+            cargarResultados();
+          }
+        }, 5000);
+      }
+    }
+
+    formClave.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const c = claveInput.value.trim();
+      if (!c) return claveInput.focus();
+      mensajeClave.classList.add("oculto");
+      await conBoton(btnEntrar, async () => {
+        try {
+          if (await verificar(c)) {
+            clave = c;
+            sessionStorage.setItem("karaoke_clave", clave);
+            mostrarPanel();
+            toast("¡Bienvenido! 🎤");
+          } else {
+            mensajeClave.textContent = "Clave incorrecta.";
+            mensajeClave.classList.remove("oculto");
+            formClave.classList.remove("entra", "sacudir");
+            void formClave.offsetWidth;
+            formClave.classList.add("sacudir");
+            claveInput.select();
+          }
+        } catch {
+          mensajeClave.textContent = "Sin conexión con el servidor. Probá de nuevo.";
+          mensajeClave.classList.remove("oculto");
+        }
+      });
+    });
+
+    $("btnSalir").addEventListener("click", () => {
+      sessionStorage.removeItem("karaoke_clave");
+      clave = "";
+      claveInput.value = "";
+      mostrarLogin();
+    });
+
+    // Con la clave guardada se entra directo al panel (con skeleton) mientras se verifica.
+    if (clave) {
+      pantallaAdmin.classList.remove("oculto");
+      verificar(clave)
+        .then((ok) => (ok ? mostrarPanel() : mostrarLogin("La clave cambió. Ingresala de nuevo.")))
+        .catch(() => mostrarLogin("Sin conexión con el servidor."));
+    } else {
+      mostrarLogin();
+    }
+
+    // ---------- Escritura ----------
+    async function llamar(funcion, params) {
+      const { data, error } = await conCarga(supabaseClient.rpc(funcion, { p_clave: clave, ...params }));
+      if (error) {
+        if (error.message.includes("Clave incorrecta")) {
+          sessionStorage.removeItem("karaoke_clave");
+          mostrarLogin("La clave cambió. Ingresala de nuevo.");
+        }
+        throw error;
+      }
+      return data;
+    }
+
+    function mensajeDeError(error) {
+      if (error.message?.includes("Failed to fetch")) return "Sin conexión. Revisá internet e intentá de nuevo.";
+      return "No se pudo guardar: " + error.message;
+    }
+
+    // ---------- Formulario ----------
+    const form = $("formParticipante");
+    const idEditando = $("idEditando");
+    const nombreInput = $("nombreInput");
+    const cancionInput = $("cancionInput");
+    const ordenInput = $("ordenInput");
+    const btnGuardar = $("btnGuardar");
+    const btnCancelar = $("btnCancelarEdicion");
+    const tituloForm = $("tituloForm");
+
+    function salirDeEdicion() {
+      idEditando.value = "";
+      form.reset();
+      btnGuardar.firstElementChild.textContent = "Agregar participante";
+      tituloForm.textContent = "Agregar participante";
+      btnCancelar.classList.add("oculto");
+      document.querySelectorAll(".participante.editando").forEach((el) => el.classList.remove("editando"));
+    }
+
+    function entrarEnEdicion(p) {
+      idEditando.value = p.id;
+      nombreInput.value = p.nombre;
+      cancionInput.value = p.cancion;
+      ordenInput.value = p.orden ?? "";
+      btnGuardar.firstElementChild.textContent = "Guardar cambios";
+      tituloForm.textContent = `Editando a ${p.nombre}`;
+      btnCancelar.classList.remove("oculto");
+      document.querySelectorAll(".participante.editando").forEach((el) => el.classList.remove("editando"));
+      document.querySelector(`[data-id="${p.id}"]`)?.classList.add("editando");
+      tituloForm.scrollIntoView({ behavior: "smooth", block: "start" });
+      nombreInput.focus({ preventScroll: true });
+    }
+
+    btnCancelar.addEventListener("click", salirDeEdicion);
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const params = {
+        p_nombre: nombreInput.value.trim(),
+        p_cancion: cancionInput.value.trim(),
+        p_orden: ordenInput.value ? parseInt(ordenInput.value, 10) : null,
+      };
+      if (!params.p_nombre || !params.p_cancion) return;
+      const editando = idEditando.value;
+
+      await conBoton(btnGuardar, async () => {
+        try {
+          if (editando) {
+            await llamar("editar_participante", { p_id: editando, ...params });
+            toast(`Guardado: ${params.p_nombre}`);
+          } else {
+            await llamar("agregar_participante", params);
+            toast(`Agregado: ${params.p_nombre} 🎶`);
+          }
+          salirDeEdicion();
+          nombreInput.focus();
+          await cargar();
+        } catch (error) {
+          toast(mensajeDeError(error), "error");
+        }
+      });
+    });
+
+    // ---------- Acciones sobre la lista ----------
+    async function accionSobre(tarjeta, boton, trabajo) {
+      tarjeta?.classList.add("ocupado");
+      try {
+        await conBoton(boton, trabajo);
+        await cargar();
+      } catch (error) {
+        toast(mensajeDeError(error), "error");
+      } finally {
+        tarjeta?.classList.remove("ocupado");
+      }
+    }
+
+    $("lista").addEventListener("click", async (e) => {
+      const boton = e.target.closest("[data-accion]");
+      if (!boton) return;
+      const tarjeta = boton.closest(".participante");
+      const p = participantes.find((x) => x.id === tarjeta.dataset.id);
+      if (!p) return;
+
+      switch (boton.dataset.accion) {
+        case "editar":
+          return entrarEnEdicion(p);
+        case "borrar":
+          if (!confirm(`¿Borrar a ${p.nombre} (${p.cancion})?`)) return;
+          return accionSobre(tarjeta, boton, async () => {
+            await llamar("borrar_participante", { p_id: p.id });
+            if (idEditando.value === p.id) salirDeEdicion();
+            toast(`Borrado: ${p.nombre}`);
+          });
+        default:
+          return accionSobre(tarjeta, boton, () =>
+            llamar("cambiar_estado", { p_id: p.id, p_estado: boton.dataset.accion })
+          );
+      }
+    });
+
+    $("escena").addEventListener("click", async (e) => {
+      const boton = e.target.closest("#btnSiguiente");
+      if (!boton) return;
+      const { ahora, pendientes } = clasificar(participantes);
+      const siguiente = pendientes[0];
+      await accionSobre(null, boton, async () => {
+        if (siguiente) {
+          await llamar("cambiar_estado", { p_id: siguiente.id, p_estado: "cantando" });
+          toast(`🎤 Ahora canta ${siguiente.nombre}`);
+        } else if (ahora) {
+          await llamar("cambiar_estado", { p_id: ahora.id, p_estado: "listo" });
+          toast("🎉 ¡Terminó la competencia!");
+        }
+      });
+    });
+
+    // ---------- Dibujo ----------
+    function escenaHtml({ ahora, pendientes }) {
+      const siguiente = pendientes[0];
+      let cuerpo;
+      if (ahora) {
+        cuerpo = `
+          <div class="nombre">${escapeHtml(ahora.nombre)}</div>
+          <div class="cancion">🎵 ${escapeHtml(ahora.cancion)}</div>`;
+      } else if (siguiente) {
+        cuerpo = `<div class="vacia">Nadie en el escenario todavía.</div>`;
+      } else {
+        cuerpo = `<div class="vacia">No hay nadie en espera.</div>`;
+      }
+
+      let boton = "";
+      if (siguiente) {
+        const verbo = ahora ? "Siguiente" : "Empezar con";
+        boton = `<button class="btn btn-primario" id="btnSiguiente" type="button"><span>${verbo}: ${escapeHtml(siguiente.nombre)} ▶</span></button>`;
+      } else if (ahora) {
+        boton = `<button class="btn btn-secundario" id="btnSiguiente" type="button"><span>✓ Terminar turno <small>(era el último)</small></span></button>`;
+      }
+
+      return `
+        <div class="escena-top">
+          <span class="badge badge-cantando"><span class="punto-vivo ${ahora ? "" : "apagado"}"></span>En escena</span>
+          ${ahora ? '<span class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>' : ""}
+        </div>
+        ${cuerpo}
+        ${boton}`;
+    }
+
+    function accionEstado(p) {
+      if (p.estado === "pendiente") return `<button class="btn btn-secundario btn-chico" data-accion="cantando" type="button"><span>▶ Cantar</span></button>`;
+      if (p.estado === "cantando") return `<button class="btn btn-secundario btn-chico" data-accion="listo" type="button"><span>✓ Terminó</span></button>`;
+      return `<button class="btn btn-secundario btn-chico" data-accion="pendiente" type="button"><span>↺ Reponer</span></button>`;
+    }
+
+    function tarjetaHtml(p, i) {
+      return `
+        <article class="participante es-${p.estado} ${idEditando.value === p.id ? "editando" : ""} ${animador.clase(p)}" data-id="${p.id}" style="--i:${i}">
+          <div class="cabeza">
+            <div class="num">${p.pos}</div>
+            <div class="datos">
+              <div class="nombre">${escapeHtml(p.nombre)}</div>
+              <div class="cancion">${escapeHtml(p.cancion)}</div>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px">
+              <span class="badge badge-${p.estado}">${ETIQUETA_ESTADO[p.estado]}</span>
+              <span class="chip-votos">❤ ${votos.get(p.id) ?? 0}</span>
+            </div>
+          </div>
+          <div class="acciones">
+            ${accionEstado(p)}
+            <button class="btn btn-secundario btn-chico" data-accion="editar" type="button"><span>Editar</span></button>
+            <button class="btn btn-peligro btn-chico btn-icono" data-accion="borrar" type="button" aria-label="Borrar a ${escapeHtml(p.nombre)}"><span>🗑</span></button>
+          </div>
+        </article>`;
+    }
+
+    function render(lista) {
+      participantes = lista;
+      const grupos = clasificar(lista);
+      const ordenados = [...(grupos.ahora ? [grupos.ahora] : []), ...grupos.pendientes, ...grupos.listos];
+
+      $("escena").innerHTML = escenaHtml(grupos);
+      $("cuenta").textContent = `${grupos.listos.length}/${grupos.total} cantaron`;
+      $("lista").innerHTML = ordenados.length
+        ? ordenados.map(tarjetaHtml).join("")
+        : `<div class="vacia-lista entra">Todavía no hay participantes.<br>Agregá el primero arriba 👆</div>`;
+      animador.recordar(ordenados);
+    }
+
+    function renderResultados() {
+      const total = [...votos.values()].reduce((a, b) => a + b, 0);
+      $("totalVotos").textContent = total === 1 ? "1 voto" : `${total} votos`;
+      const contenedor = $("resultados");
+      if (!total) {
+        contenedor.innerHTML = `<div class="vacia" style="text-align: center; color: var(--muted)">Todavía nadie votó. Compartí el QR 📱</div>`;
+        return;
+      }
+      const ranking = participantes
+        .map((p) => ({ ...p, n: votos.get(p.id) ?? 0 }))
+        .filter((p) => p.n > 0)
+        .sort((a, b) => b.n - a.n);
+      if (!ranking.length) return;
+      const max = ranking[0].n;
+      const medallas = ["🥇", "🥈", "🥉"];
+      contenedor.innerHTML = `
+        <div class="ranking">
+          ${ranking.map((p, i) => `
+            <div class="puesto">
+              <span class="medalla ${i < 3 ? "top" : ""}">${medallas[i] ?? i + 1}</span>
+              <span class="quien">${escapeHtml(p.nombre)}</span>
+              <span class="cuantos">${p.n}</span>
+              <div class="barra"><div data-id="${p.id}" style="width: ${anchosAnteriores.get(p.id) ?? 0}%"></div></div>
+            </div>`).join("")}
+        </div>
+        <div class="resultados-pie"><span>Solo vos ves estos números</span><span>Actualizado ${new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span></div>`;
+      const nuevos = new Map(ranking.map((p) => [p.id, Math.round((p.n / max) * 100)]));
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        contenedor.querySelectorAll(".barra > div").forEach((el) => (el.style.width = nuevos.get(el.dataset.id) + "%"));
+      }));
+      anchosAnteriores = nuevos;
+    }
+
+    async function cargarResultados() {
+      const { data, error } = await supabaseClient.rpc("resultados", { p_clave: clave });
+      if (error) return;
+      const nuevos = new Map(data.map((r) => [r.participante_id, Number(r.votos)]));
+      const cambio = nuevos.size !== votos.size || [...nuevos].some(([id, n]) => votos.get(id) !== n);
+      votos = nuevos;
+      renderResultados();
+      if (cambio) render(participantes);
+    }
+
+    async function cargar() {
+      const { data, error } = await traerParticipantes();
+      if (error) {
+        toast("No se pudo cargar la lista: " + error.message, "error");
+        return;
+      }
+      render(data);
+      cargarResultados();
+    }
+  </script>
+</body>
+</html>

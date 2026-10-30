@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0e0718" />
+<title>Karaoke Night — En vivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
+    background: linear-gradient(to bottom, rgba(14, 7, 24, 0.95) 60%, rgba(14, 7, 24, 0));
+    backdrop-filter: blur(6px);
+  }
+  .marca { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .marca .logo {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: var(--grad);
+    font-size: 1.15rem;
+    box-shadow: 0 4px 16px rgba(255, 45, 120, 0.35);
+  }
+  .marca h1 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+  }
+  .marca p { margin: 0; font-size: 0.75rem; color: var(--muted); }
+  .vivo {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.04);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Progreso */
+  .progreso { margin: 6px 0 18px; }
+  .progreso-texto {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .progreso-texto strong { color: var(--text); font-weight: 600; }
+  .pista { height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); overflow: hidden; }
+  .pista > div {
+    height: 100%;
+    width: 0;
+    border-radius: inherit;
+    background: var(--grad);
+    transition: width 0.8s var(--ease);
+  }
+
+  /* Nivel 1: quien canta ahora */
+  .hero {
+    position: relative;
+    padding: 22px 20px 24px;
+    border-radius: 22px;
+    border: 2px solid transparent;
+    background:
+      linear-gradient(160deg, #2a1548, var(--card) 70%) padding-box,
+      linear-gradient(120deg, var(--accent), var(--accent2), var(--cyan), var(--accent)) border-box;
+    background-size: 100% 100%, 300% 300%;
+    box-shadow: 0 0 44px rgba(255, 45, 120, 0.22);
+    animation: borde 6s linear infinite;
+    overflow: hidden;
+  }
+  @keyframes borde { to { background-position: 0 0, 300% 0; } }
+  .hero-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .hero-nombre {
+    font-size: clamp(1.9rem, 8vw, 2.8rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+  }
+  .hero-cancion {
+    margin-top: 8px;
+    font-size: clamp(1rem, 4.2vw, 1.2rem);
+    color: #e3d6ff;
+    overflow-wrap: anywhere;
+  }
+  .hero-turno {
+    position: absolute;
+    right: -6px;
+    bottom: -26px;
+    font-size: 7.5rem;
+    font-weight: 800;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.04);
+    pointer-events: none;
+  }
+  .hero.vacio { text-align: center; padding: 30px 20px; animation: none; background: var(--card) padding-box, var(--line) border-box; box-shadow: none; }
+  .hero.vacio .icono { font-size: 2.4rem; margin-bottom: 8px; }
+  .hero.vacio .titulo { font-size: 1.35rem; font-weight: 700; }
+  .hero.vacio .detalle { margin-top: 6px; color: var(--muted); }
+
+  /* Nivel 2: el siguiente */
+  .sigue {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 12px;
+    padding: 16px;
+    border-radius: var(--radius);
+    background: var(--card-2);
+    border: 1px solid rgba(255, 210, 63, 0.25);
+  }
+  .sigue .etiqueta {
+    flex: 0 0 auto;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    color: var(--accent2);
+  }
+  .sigue .datos { min-width: 0; flex: 1; }
+  .sigue .nombre { font-size: 1.15rem; font-weight: 700; overflow-wrap: anywhere; }
+  .sigue .cancion { color: var(--muted); font-size: 0.92rem; overflow-wrap: anywhere; }
+  .sigue .num { font-size: 1.5rem; font-weight: 800; color: rgba(255, 210, 63, 0.5); }
+
+  /* Nivel 3: en espera */
+  .lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .fila {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--card);
+    border: 1px solid var(--line);
+  }
+  .fila .num {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .fila .datos { min-width: 0; flex: 1; }
+  .fila .nombre { font-weight: 600; overflow-wrap: anywhere; }
+  .fila .cancion { color: var(--muted); font-size: 0.86rem; overflow-wrap: anywhere; }
+
+  /* Nivel 4: ya cantaron */
+  .fila.listo { background: transparent; border-style: dashed; padding: 9px 14px; }
+  .fila.listo .nombre { color: var(--muted); font-weight: 500; font-size: 0.92rem; }
+  .fila.listo .cancion { color: var(--dim); font-size: 0.8rem; }
+  .fila.listo .num { background: rgba(61, 220, 151, 0.1); color: var(--ok); font-size: 0.85rem; }
+
+  /* Skeleton inicial */
+  .sk-hero { height: 168px; border-radius: 22px; padding: 22px 20px; }
+  .sk-fila { display: flex; align-items: center; gap: 12px; padding: 14px; margin-top: 8px; }
+
+  /* Votación */
+  .btn-votar {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border-color: rgba(255, 45, 120, 0.5);
+    background: rgba(255, 45, 120, 0.12);
+    color: #ff86b0;
+    font-size: 0.85rem;
+    --spin: #ff86b0;
+  }
+  .btn-votar:hover { background: rgba(255, 45, 120, 0.22); }
+  .tu-voto {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: var(--grad);
+    color: #1a0f2b;
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+    animation: latido 0.6s var(--ease);
+  }
+  @keyframes latido { 0% { transform: scale(0.6); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  .voto-hero { position: relative; z-index: 1; margin-top: 18px; }
+  .voto-hero .btn-votar { width: 100%; min-height: 48px; font-size: 0.95rem; }
+  .banner-voto {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0 16px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 45, 120, 0.3);
+    background: rgba(255, 45, 120, 0.09);
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+  .banner-voto.hecho { border-color: rgba(61, 220, 151, 0.3); background: rgba(61, 220, 151, 0.07); }
+  .banner-voto .icono { font-size: 1.4rem; }
+  .banner-voto strong { color: var(--text); }
+
+  /* Portada: pedir el nombre */
+  .portada {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    padding: 24px 16px;
+    background: rgba(14, 7, 24, 0.86);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .portada-card {
+    width: min(100%, 380px);
+    padding: 28px 22px 22px;
+    border-radius: 24px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    text-align: center;
+  }
+  .portada-card .logo-grande {
+    display: grid;
+    place-items: center;
+    width: 68px;
+    height: 68px;
+    margin: 0 auto 14px;
+    border-radius: 22px;
+    background: var(--grad);
+    font-size: 2rem;
+    box-shadow: 0 8px 30px rgba(255, 45, 120, 0.45);
+  }
+  .portada-card h2 { margin: 0; font-size: 1.6rem; font-weight: 800; }
+  .portada-card p { margin: 8px 0 20px; color: var(--muted); }
+  .portada-card .nota { margin: 14px 0 0; font-size: 0.82rem; }
+  .campo {
+    width: 100%;
+    min-height: 52px;
+    margin-bottom: 12px;
+    padding: 0 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: #120a20;
+    color: var(--text);
+    font: inherit;
+    font-size: 1.05rem;
+    text-align: center;
+  }
+  .campo:focus { outline: none; border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(255, 210, 63, 0.18); }
+  .campo::placeholder { color: var(--dim); }
+
+  /* Hoja de confirmación */
+  .hoja-fondo {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    animation: fundido 0.2s;
+  }
+  .hoja {
+    width: min(100%, 520px);
+    padding: 12px 20px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 24px 24px 0 0;
+    background: var(--card-2);
+    text-align: center;
+    animation: subir 0.32s var(--ease);
+  }
+  .hoja-asa { width: 40px; height: 4px; margin: 0 auto 16px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); }
+  .hoja .pre { margin: 0; font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .hoja h3 { margin: 6px 0 2px; font-size: 1.6rem; font-weight: 800; overflow-wrap: anywhere; }
+  .hoja .cancion { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+  .hoja .nota { margin: 16px 0 0; font-size: 0.85rem; color: var(--accent2); }
+  .hoja-botones { display: flex; gap: 10px; margin-top: 18px; }
+  .hoja-botones .btn { flex: 1; min-height: 52px; }
+  @keyframes subir { from { transform: translateY(100%); } }
+  @keyframes fundido { from { opacity: 0; } }
+
+  /* Corazones al votar */
+  .corazon {
+    position: fixed;
+    bottom: -40px;
+    z-index: 70;
+    font-size: 1.8rem;
+    pointer-events: none;
+    animation: flotar 1.8s ease-out forwards;
+  }
+  @keyframes flotar {
+    to { transform: translate(var(--dx), -85vh) rotate(var(--rot)); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+  <div class="barra-carga" id="barraCarga"></div>
+
+  <header class="top">
+    <div class="marca">
+      <div class="logo" aria-hidden="true">🎤</div>
+      <div>
+        <h1>Karaoke Night</h1>
+        <p id="saludo">Competencia de karaoke</p>
+      </div>
+    </div>
+    <div class="vivo" id="vivo"><span class="punto-vivo apagado" id="vivoPunto"></span><span id="vivoTexto">Conectando</span></div>
+  </header>
+
+  <main id="contenido" aria-busy="true">
+    <div class="skeleton sk-hero">
+      <div class="sk-linea" style="width: 34%; margin-bottom: 26px"></div>
+      <div class="sk-linea" style="width: 72%; height: 26px; margin-bottom: 14px"></div>
+      <div class="sk-linea" style="width: 48%"></div>
+    </div>
+    <div class="skeleton sk-fila" style="margin-top: 12px"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 55%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 35%"></div></div></div>
+    <div class="skeleton sk-fila" style="margin-top: 28px"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 60%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 40%"></div></div></div>
+    <div class="skeleton sk-fila"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 45%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 30%"></div></div></div>
+    <div class="skeleton sk-fila"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 52%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 38%"></div></div></div>
+  </main>
+
+  <div class="portada oculto" id="portada">
+    <form class="portada-card entra" id="formNombre">
+      <div class="logo-grande" aria-hidden="true">🎤</div>
+      <h2>Karaoke Night</h2>
+      <p>Escribí tu nombre para entrar y votar por tu favorito.</p>
+      <input class="campo" id="nombreVotante" maxlength="40" autocomplete="given-name" placeholder="Tu nombre" aria-label="Tu nombre" required />
+      <button class="btn btn-primario btn-ancho" type="submit" style="min-height: 52px"><span>Entrar</span></button>
+      <p class="nota">Tenés <strong>un solo voto</strong>: elegilo bien 😉</p>
+    </form>
+  </div>
+
+  <div class="hoja-fondo oculto" id="hoja">
+    <div class="hoja" role="dialog" aria-modal="true" aria-labelledby="hojaNombre">
+      <div class="hoja-asa"></div>
+      <p class="pre">Vas a votar por</p>
+      <h3 id="hojaNombre"></h3>
+      <p class="cancion" id="hojaCancion"></p>
+      <p class="nota">Tenés un solo voto y no se puede cambiar.</p>
+      <div class="hoja-botones">
+        <button class="btn btn-secundario" id="hojaCancelar" type="button"><span>Cancelar</span></button>
+        <button class="btn btn-primario" id="hojaConfirmar" type="button"><span>❤ Sí, votar</span></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    const contenido = document.getElementById("contenido");
+    const animador = crearAnimador();
+    let heroAnterior;
+    let pctAnterior = 0;
+    let ultimaLista = [];
+    let listaCargada = false;
+
+    // ---------- Votante ----------
+    // localStorage puede fallar (modo privado viejo de Safari): sin él, todo sigue andando.
+    const almacen = {
+      get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+    };
+
+    function nuevoId() {
+      if (crypto.randomUUID) return crypto.randomUUID();
+      const b = crypto.getRandomValues(new Uint8Array(16));
+      b[6] = (b[6] & 0x0f) | 0x40;
+      b[8] = (b[8] & 0x3f) | 0x80;
+      const h = [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+      return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+    }
+
+    let dispositivo = almacen.get("karaoke_dispositivo");
+    if (!dispositivo) {
+      dispositivo = nuevoId();
+      almacen.set("karaoke_dispositivo", dispositivo);
+    }
+    let nombreVotante = almacen.get("karaoke_nombre") || "";
+    let miVoto = null;
+    let votoCargado = false;
+
+    async function cargarMiVoto() {
+      const { data, error } = await conCarga(supabaseClient.rpc("mi_voto", { p_dispositivo: dispositivo }));
+      if (error) return;
+      miVoto = data;
+      votoCargado = true;
+      if (listaCargada) render(ultimaLista);
+    }
+
+    function votoHtml(p) {
+      if (!nombreVotante || !votoCargado) return "";
+      if (miVoto === p.id) return `<span class="tu-voto">❤ Tu voto</span>`;
+      if (miVoto) return "";
+      return `<button class="btn btn-votar" data-votar="${p.id}" type="button"><span>❤ Votar</span></button>`;
+    }
+
+    function bannerHtml() {
+      if (!nombreVotante || !votoCargado) return "";
+      const nombre = escapeHtml(nombreVotante);
+      if (miVoto) {
+        const elegido = ultimaLista.find((p) => p.id === miVoto);
+        return `
+          <div class="banner-voto hecho">
+            <span class="icono">💚</span>
+            <span>¡Gracias, <strong>${nombre}</strong>! Votaste por <strong>${escapeHtml(elegido?.nombre ?? "tu favorito")}</strong>.</span>
+          </div>`;
+      }
+      return `
+        <div class="banner-voto">
+          <span class="icono">❤</span>
+          <span>Hola <strong>${nombre}</strong>, tenés <strong>1 voto</strong>. Tocá “Votar” en tu favorito.</span>
+        </div>`;
+    }
+
+    function heroHtml({ ahora, pendientes, listos, total }) {
+      if (ahora) {
+        const clase = heroAnterior === ahora.id ? "" : "entra";
+        heroAnterior = ahora.id;
+        return `
+          <article class="hero ${clase}" aria-live="polite">
+            <div class="hero-top">
+              <span class="badge badge-cantando"><span class="punto-vivo"></span>Cantando ahora</span>
+              <span class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
+            </div>
+            <div class="hero-nombre">${escapeHtml(ahora.nombre)}</div>
+            <div class="hero-cancion">🎵 ${escapeHtml(ahora.cancion)}</div>
+            <div class="hero-turno" aria-hidden="true">${ahora.pos}</div>
+            ${votoHtml(ahora) ? `<div class="voto-hero">${votoHtml(ahora)}</div>` : ""}
+          </article>`;
+      }
+      heroAnterior = null;
+      let icono, titulo, detalle;
+      if (total === 0) {
+        [icono, titulo, detalle] = ["🎤", "Todavía no hay participantes", "La lista aparece acá apenas se anote el primero."];
+      } else if (pendientes.length) {
+        [icono, titulo, detalle] = ["✨", "Estamos por empezar", "En un momento sube el primero al escenario."];
+      } else {
+        [icono, titulo, detalle] = ["🎉", "¡Terminó la competencia!", `Cantaron ${listos.length} participantes. ¡Gracias!`];
+      }
+      return `
+        <article class="hero vacio entra">
+          <div class="icono">${icono}</div>
+          <div class="titulo">${titulo}</div>
+          <div class="detalle">${detalle}</div>
+        </article>`;
+    }
+
+    function filaHtml(p, i, extra = "") {
+      return `
+        <li class="fila ${extra} ${animador.clase(p)}" style="--i:${i}">
+          <div class="num">${extra === "listo" ? "✓" : p.pos}</div>
+          <div class="datos">
+            <div class="nombre">${escapeHtml(p.nombre)}</div>
+            <div class="cancion">${escapeHtml(p.cancion)}</div>
+          </div>
+          ${votoHtml(p)}
+        </li>`;
+    }
+
+    function render(lista) {
+      const grupos = clasificar(lista);
+      const { ahora, pendientes, listos, total } = grupos;
+      const [siguiente, ...enEspera] = pendientes;
+      const pct = total ? Math.round((listos.length / total) * 100) : 0;
+      const todos = [...(ahora ? [ahora] : []), ...pendientes, ...listos];
+
+      let html = total ? bannerHtml() : "";
+      if (total) {
+        html += `
+          <section class="progreso">
+            <div class="progreso-texto"><span><strong>${listos.length}</strong> de ${total} ya cantaron</span><span>${pct}%</span></div>
+            <div class="pista"><div id="pistaRelleno" style="width:${pctAnterior}%"></div></div>
+          </section>`;
+      }
+      html += heroHtml(grupos);
+
+      if (siguiente) {
+        html += `
+          <section class="sigue ${animador.clase(siguiente)}">
+            <span class="etiqueta">${ahora ? "SIGUE" : "ABRE"}</span>
+            <div class="datos">
+              <div class="nombre">${escapeHtml(siguiente.nombre)}</div>
+              <div class="cancion">${escapeHtml(siguiente.cancion)}</div>
+            </div>
+            ${votoHtml(siguiente) || `<span class="num">#${siguiente.pos}</span>`}
+          </section>`;
+      }
+
+      if (enEspera.length) {
+        html += `<h2 class="seccion">En espera <span class="cuenta">${enEspera.length}</span></h2>
+          <ol class="lista">${enEspera.map((p, i) => filaHtml(p, i)).join("")}</ol>`;
+      }
+      if (listos.length) {
+        html += `<h2 class="seccion">Ya cantaron <span class="cuenta">${listos.length}</span></h2>
+          <ol class="lista">${listos.map((p, i) => filaHtml(p, i, "listo")).join("")}</ol>`;
+      }
+
+      contenido.innerHTML = html;
+      contenido.setAttribute("aria-busy", "false");
+      animador.recordar(todos);
+
+      // La barra nace con el ancho anterior y se anima hasta el nuevo un cuadro después.
+      const relleno = document.getElementById("pistaRelleno");
+      if (relleno) requestAnimationFrame(() => requestAnimationFrame(() => (relleno.style.width = pct + "%")));
+      pctAnterior = pct;
+    }
+
+    function renderError(mensaje) {
+      contenido.setAttribute("aria-busy", "false");
+      contenido.innerHTML = `
+        <div class="aviso-error entra">
+          <p>No se pudo cargar la lista.<br><small>${escapeHtml(mensaje)}</small></p>
+          <button class="btn btn-secundario btn-chico" onclick="cargar()">Reintentar</button>
+        </div>`;
+    }
+
+    async function cargar() {
+      const { data, error } = await traerParticipantes();
+      if (error) return renderError(error.message);
+      ultimaLista = data;
+      listaCargada = true;
+      render(data);
+      // Si borraron a quien votó, su voto se borró con él: se vuelve a consultar.
+      if (miVoto && !data.some((p) => p.id === miVoto)) cargarMiVoto();
+    }
+
+    function mostrarConexion(estado) {
+      const punto = document.getElementById("vivoPunto");
+      const texto = document.getElementById("vivoTexto");
+      const conectado = estado === "SUBSCRIBED";
+      punto.classList.toggle("apagado", !conectado);
+      texto.textContent = conectado ? "En vivo" : "Reconectando";
+      if (conectado) cargar();
+    }
+
+    // ---------- Portada ----------
+    const portada = document.getElementById("portada");
+    const formNombre = document.getElementById("formNombre");
+    const nombreInput = document.getElementById("nombreVotante");
+
+    function saludar() {
+      document.getElementById("saludo").textContent = `Hola, ${nombreVotante} 👋`;
+    }
+
+    formNombre.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const nombre = nombreInput.value.trim().replace(/\s+/g, " ");
+      if (nombre.length < 2) {
+        formNombre.classList.remove("entra", "sacudir");
+        void formNombre.offsetWidth;
+        formNombre.classList.add("sacudir");
+        return nombreInput.focus();
+      }
+      nombreVotante = nombre;
+      almacen.set("karaoke_nombre", nombre);
+      portada.classList.add("oculto");
+      saludar();
+      cargarMiVoto();
+    });
+
+    // ---------- Votar ----------
+    const hoja = document.getElementById("hoja");
+    const hojaConfirmar = document.getElementById("hojaConfirmar");
+    let candidato = null;
+
+    function abrirHoja(p) {
+      candidato = p;
+      document.getElementById("hojaNombre").textContent = p.nombre;
+      document.getElementById("hojaCancion").textContent = "🎵 " + p.cancion;
+      hoja.classList.remove("oculto");
+      hojaConfirmar.focus();
+    }
+
+    function cerrarHoja() {
+      hoja.classList.add("oculto");
+      candidato = null;
+    }
+
+    function lluviaDeCorazones() {
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const emojis = ["❤️", "💖", "💕", "🎤", "✨"];
+      for (let i = 0; i < 16; i++) {
+        const c = document.createElement("span");
+        c.className = "corazon";
+        c.textContent = emojis[i % emojis.length];
+        c.style.left = Math.random() * 100 + "vw";
+        c.style.setProperty("--dx", (Math.random() * 80 - 40) + "px");
+        c.style.setProperty("--rot", (Math.random() * 60 - 30) + "deg");
+        c.style.animationDelay = Math.random() * 0.4 + "s";
+        c.addEventListener("animationend", () => c.remove(), { once: true });
+        document.body.append(c);
+      }
+    }
+
+    contenido.addEventListener("click", (e) => {
+      const boton = e.target.closest("[data-votar]");
+      if (!boton) return;
+      const p = ultimaLista.find((x) => x.id === boton.dataset.votar);
+      if (p) abrirHoja(p);
+    });
+
+    document.getElementById("hojaCancelar").addEventListener("click", cerrarHoja);
+    hoja.addEventListener("click", (e) => { if (e.target === hoja) cerrarHoja(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !hoja.classList.contains("oculto")) cerrarHoja(); });
+
+    hojaConfirmar.addEventListener("click", () => {
+      if (!candidato) return;
+      const p = candidato;
+      conBoton(hojaConfirmar, async () => {
+        const { data, error } = await conCarga(
+          supabaseClient.rpc("votar", { p_dispositivo: dispositivo, p_votante: nombreVotante, p_participante: p.id })
+        );
+        cerrarHoja();
+        if (error) {
+          const ya = error.message.includes("Ya votaste");
+          toast(ya ? "Ya habías votado desde este celular." : "No se pudo votar: " + error.message, "error");
+          if (ya) cargarMiVoto();
+          return;
+        }
+        miVoto = data;
+        render(ultimaLista);
+        lluviaDeCorazones();
+        toast(`¡Voto registrado para ${p.nombre}! ❤`);
+      });
+    });
+
+    // ---------- Arranque ----------
+    if (nombreVotante) {
+      saludar();
+      cargarMiVoto();
+    } else {
+      portada.classList.remove("oculto");
+      nombreInput.focus();
+    }
+
+    cargar();
+    suscribirCambios("participantes-publico", cargar, mostrarConexion);
+  </script>
+</body>
+</html>
