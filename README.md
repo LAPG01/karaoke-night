@@ -4,10 +4,11 @@ Página para una competencia de karaoke, pensada para celular y para compartir p
 
 - `index.html` — lo que abre el público: pide el nombre, muestra quién canta,
   quién sigue y la lista, en vivo. Cada persona tiene **un voto** (uno por celular).
-- `admin.html` — panel con clave, en cuatro pestañas: **En vivo** (pasar de turno),
-  **Participantes** (agregar/editar/borrar), **Votos** (ranking y quién votó a quién,
-  solo lo ve el admin) y **Final** (cerrar la votación y revelar los puestos uno por
-  uno, del último al ganador, en todos los celulares a la vez).
+- `admin.html` — panel con usuario y contraseña, en cinco pestañas: **En vivo** (pasar
+  de turno), **Participantes** (agregar/editar/borrar), **Votos** (ranking y quién votó
+  a quién), **Final** (cerrar la votación y revelar los puestos uno por uno, del último
+  al ganador, en todos los celulares a la vez) e **Historial** (todas las competencias
+  guardadas, con descarga a Excel).
 
 Hecha con HTML/CSS/JS sin build, Supabase (base de datos + tiempo real) y GitHub Pages.
 
@@ -19,6 +20,7 @@ Hecha con HTML/CSS/JS sin build, Supabase (base de datos + tiempo real) y GitHub
 | `app.js`, `styles.css` | Código y estilos compartidos |
 | `config.js` | URL y clave pública de Supabase (pública por diseño) |
 | `schema.sql` | Tablas, permisos y funciones de la base |
+| `pruebas.sql` | Pruebas automáticas de la base (se deshacen solas) |
 
 ## Seguridad
 
@@ -34,6 +36,16 @@ Hecha con HTML/CSS/JS sin build, Supabase (base de datos + tiempo real) y GitHub
 - "Un voto por persona" es un voto por dispositivo: alcanza para un evento, pero
   alguien que borre los datos del navegador podría votar de nuevo.
 
-## Después del evento
+## Historial
 
-Para borrar todo y reusarla: `delete from votos; delete from participantes;`
+Cada competencia se guarda sola, para siempre, al **cerrar la votación** y antes de
+**Nueva competencia** / **Otra ronda**: participantes (turno, canción, votos, puesto)
+y cada voto (quién votó a quién y cuándo). Se ve en la pestaña Historial del admin y
+se descarga en CSV (abre en Excel). El público no puede leerlo.
+
+## Pruebas
+
+Pegar `pruebas.sql` en Supabase > SQL Editor y correrlo. Prueba turnos, votos,
+cambio de voto, cierre, revelación, historial y permisos sobre datos de prueba, y
+al terminar deshace todo. Termina con un aviso en rojo a propósito:
+`PRUEBAS OK: N de N pasaron` significa que todo anda; `FALLÓ: …` dice qué no.

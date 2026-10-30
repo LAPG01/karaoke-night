@@ -663,3 +663,190 @@ $$;
 
 revoke all on function nueva_competencia(text, boolean) from public;
 grant execute on function nueva_competencia(text, boolean) to anon, authenticated;
+
+-- ---------- Historial de competencias ----------
+-- Cada competencia queda guardada para siempre: participantes (turno, canción,
+-- votos, puesto) y cada voto (quién votó a quién y cuándo). Se guarda al
+-- cerrar la votación y antes de "Nueva competencia" / "Otra ronda".
+create table if not exists competencias (
+  id serial primary key,
+  empezo timestamptz not null default now(),
+  termino timestamptz
+);
+
+create table if not exists historial_participantes (
+  competencia_id integer not null references competencias(id) on delete cascade,
+  turno integer not null,
+  nombre text not null,
+  cancion text not null,
+  votos integer not null,
+  puesto integer not null,
+  primary key (competencia_id, turno)
+);
+
+create table if not exists historial_votos (
+  id bigserial primary key,
+  competencia_id integer not null references competencias(id) on delete cascade,
+  votante text not null,
+  participante text not null,
+  votado_at timestamptz not null
+);
+create index if not exists historial_votos_competencia_idx on historial_votos (competencia_id);
+
+-- Privadas: sin políticas, solo se leen con historial() y sesión de admin.
+alter table competencias enable row level security;
+alter table historial_participantes enable row level security;
+alter table historial_votos enable row level security;
+
+alter table evento add column if not exists competencia_id integer references competencias(id);
+do $$
+declare
+  cid integer;
+begin
+  if (select competencia_id from evento where id) is null then
+    insert into competencias default values returning id into cid;
+    update evento set competencia_id = cid where id;
+  end if;
+end $$;
+alter table evento alter column competencia_id set not null;
+
+-- Guarda (o reemplaza) la foto de la competencia en curso. Interna: no se expone.
+create or replace function _archivar_competencia()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  cid integer;
+begin
+  select competencia_id into cid from evento where id;
+  delete from historial_participantes where competencia_id = cid;
+  delete from historial_votos where competencia_id = cid;
+  insert into historial_participantes (competencia_id, turno, nombre, cancion, votos, puesto)
+  select cid, p.orden, p.nombre, p.cancion, coalesce(v.n, 0),
+         rank() over (order by coalesce(v.n, 0) desc)
+  from participantes p
+  left join (select participante_id, count(*)::int as n from votos group by participante_id) v
+    on v.participante_id = p.id;
+  insert into historial_votos (competencia_id, votante, participante, votado_at)
+  select cid, v.votante, p.nombre, v.created_at
+  from votos v
+  join participantes p on p.id = v.participante_id;
+end;
+$$;
+revoke all on function _archivar_competencia() from public, anon, authenticated;
+
+-- Reemplaza la versión de arriba: cerrar la votación también guarda en el historial.
+create or replace function cerrar_votacion(p_clave text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not _clave_admin_valida(p_clave) then
+    raise exception 'Clave incorrecta';
+  end if;
+  delete from ranking_final where true;
+  insert into ranking_final (orden, puesto, nombre, cancion, votos)
+  select
+    row_number() over (order by coalesce(v.n, 0) desc, p.orden nulls last, p.created_at),
+    rank() over (order by coalesce(v.n, 0) desc),
+    p.nombre, p.cancion, coalesce(v.n, 0)
+  from participantes p
+  left join (select participante_id, count(*)::int as n from votos group by participante_id) v
+    on v.participante_id = p.id;
+  update evento
+  set votacion_abierta = false,
+      revelados = 0,
+      total_puestos = (select count(*) from ranking_final)
+  where id;
+  perform _archivar_competencia();
+end;
+$$;
+
+-- Reemplaza la versión de arriba: guarda antes de limpiar y abre una competencia nueva.
+create or replace function nueva_competencia(p_clave text, p_borrar_participantes boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  anterior integer;
+  nueva integer;
+begin
+  if not _clave_admin_valida(p_clave) then
+    raise exception 'Clave incorrecta';
+  end if;
+  perform pg_advisory_xact_lock(hashtext('karaoke_turnos'));
+  -- Si estaba cerrada ya se guardó al cerrarla (y quizás cambiaron participantes después).
+  if (select votacion_abierta from evento where id) then
+    perform _archivar_competencia();
+  end if;
+  select competencia_id into anterior from evento where id;
+  update competencias set termino = now() where id = anterior;
+
+  delete from votos where true;
+  delete from ranking_final where true;
+  if p_borrar_participantes then
+    delete from participantes where true;
+  else
+    update participantes set estado = 'pendiente' where estado <> 'pendiente';
+  end if;
+
+  insert into competencias default values returning id into nueva;
+  update evento
+  set competencia_id = nueva, votacion_abierta = true, revelados = 0, total_puestos = 0
+  where id;
+  -- Una competencia sin participantes no aporta nada al historial.
+  delete from competencias c
+  where c.id = anterior
+    and not exists (select 1 from historial_participantes h where h.competencia_id = c.id);
+end;
+$$;
+
+-- Solo admin: todo el historial, la más reciente primero.
+create or replace function historial(p_clave text)
+returns json
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  actual integer;
+  resultado json;
+begin
+  if not _clave_admin_valida(p_clave) then
+    raise exception 'Clave incorrecta';
+  end if;
+  select competencia_id into actual from evento where id;
+  select coalesce(json_agg(json_build_object(
+    'id', c.id,
+    'empezo', c.empezo,
+    'termino', c.termino,
+    'actual', c.id = actual,
+    'participantes', (
+      select coalesce(json_agg(json_build_object(
+        'turno', h.turno, 'nombre', h.nombre, 'cancion', h.cancion,
+        'votos', h.votos, 'puesto', h.puesto) order by h.puesto, h.turno), '[]'::json)
+      from historial_participantes h where h.competencia_id = c.id),
+    'votos', (
+      select coalesce(json_agg(json_build_object(
+        'votante', v.votante, 'participante', v.participante, 'hora', v.votado_at)
+        order by v.votado_at), '[]'::json)
+      from historial_votos v where v.competencia_id = c.id)
+  ) order by c.id desc), '[]'::json)
+  into resultado
+  from competencias c
+  where exists (select 1 from historial_participantes h where h.competencia_id = c.id);
+  return resultado;
+end;
+$$;
+
+revoke all on function nueva_competencia(text, boolean) from public;
+revoke all on function historial(text) from public;
+grant execute on function nueva_competencia(text, boolean) to anon, authenticated;
+grant execute on function historial(text) to anon, authenticated;

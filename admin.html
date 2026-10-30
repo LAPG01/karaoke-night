@@ -126,7 +126,7 @@
     transform: translateX(-50%);
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 4px;
     width: min(calc(100% - 24px), 480px);
     padding: 6px;
@@ -387,6 +387,31 @@
   .ya li.p1 { background: rgba(var(--oro-rgb), 0.1); }
   .ya li.p1 .n { color: var(--accent2); }
 
+  /* ---------- Historial ---------- */
+  .ayuda-historial { margin: -4px 0 14px; color: var(--muted); font-size: 0.88rem; line-height: 1.4; }
+  .ayuda-historial strong { color: var(--text); }
+  .historial { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+  .comp { padding: 16px; border-radius: 20px; background: var(--card); border: 1px solid var(--line); }
+  .comp.actual { border-color: rgba(var(--oro-rgb), 0.45); }
+  .comp-cabeza { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .comp h3 { margin: 0; font-size: 1.1rem; font-weight: 800; }
+  .comp .fecha { margin: 2px 0 0; color: var(--muted); font-size: 0.8rem; }
+  .comp .ganador { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; background: rgba(var(--oro-rgb), 0.1); font-size: 0.92rem; overflow-wrap: anywhere; }
+  .comp .ganador strong { color: var(--accent2); }
+  .comp .chips-comp { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .comp .chips-comp span { padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); color: var(--muted); font-size: 0.78rem; font-weight: 600; }
+  .comp details { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .comp summary { cursor: pointer; font-weight: 700; font-size: 0.9rem; color: var(--text); list-style: none; display: flex; justify-content: space-between; align-items: center; min-height: 32px; }
+  .comp summary::-webkit-details-marker { display: none; }
+  .comp summary::after { content: "▾"; color: var(--muted); transition: transform 0.2s; }
+  .comp details[open] summary::after { transform: rotate(180deg); }
+  .comp .ya { margin-top: 8px; }
+  .comp .voto-h { display: flex; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); font-size: 0.86rem; }
+  .comp .voto-h:last-child { border-bottom: 0; }
+  .comp .voto-h .q { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .comp .voto-h .q strong { font-weight: 600; }
+  .comp .voto-h time { flex: 0 0 auto; color: var(--dim); font-variant-numeric: tabular-nums; font-size: 0.78rem; }
+
   /* ---------- Hojas ---------- */
   .hoja h3 { margin: 0 0 4px; font-size: 1.35rem; font-weight: 800; }
   .hoja .sub { margin: 0 0 18px; color: var(--muted); font-size: 0.9rem; }
@@ -506,6 +531,17 @@
         </section>
       </section>
 
+      <!-- Historial -->
+      <section class="vista" data-vista="historial">
+        <div class="titulo-vista"><h2>Historial</h2><span id="cuentaHistorial"></span></div>
+        <p class="ayuda-historial">Cada competencia se guarda sola en la base al <strong>cerrar la votación</strong> o al <strong>empezar otra</strong>, y queda guardada para siempre. Solo vos lo ves.</p>
+        <button class="btn btn-secundario btn-ancho" id="btnCsv" type="button" disabled><span>⬇ Descargar todo (Excel)</span></button>
+        <div class="historial" id="historial">
+          <div class="skeleton sk-part" style="height: 120px"></div>
+          <div class="skeleton sk-part" style="height: 120px"></div>
+        </div>
+      </section>
+
       <button class="fab oculto" id="fab" type="button" aria-label="Agregar participante">+</button>
 
       <nav class="nav" aria-label="Secciones">
@@ -513,6 +549,7 @@
         <button type="button" data-ir="lista"><span class="ic">👥</span>Participantes</button>
         <button type="button" data-ir="votos"><span class="ic">❤️</span>Votos<span class="globo oculto" id="globoVotos"></span></button>
         <button type="button" data-ir="final"><span class="ic">🏆</span>Final</button>
+        <button type="button" data-ir="historial"><span class="ic">📜</span>Historial</button>
       </nav>
     </section>
   </main>
@@ -590,6 +627,7 @@
       document.querySelectorAll(".nav button").forEach((b) => b.classList.toggle("activo", b.dataset.ir === vista));
       $("fab").classList.toggle("oculto", vista !== "lista");
       if (vista === "votos") votosAlSalirDeVotos = null;
+      if (vista === "historial" && sesion) cargarHistorial();
       actualizarGlobo();
       window.scrollTo({ top: 0 });
     }
@@ -1248,6 +1286,98 @@
           toast("↺ Votación abierta de nuevo", "revelar");
         }
       });
+    });
+
+    // ---------- Historial ----------
+    let historialDatos = [];
+
+    async function cargarHistorial() {
+      try {
+        historialDatos = await llamar("historial", {});
+        renderHistorial();
+      } catch (error) {
+        toast("No se pudo cargar el historial: " + error.message, "error");
+      }
+    }
+
+    const fechaCorta = (iso) => new Date(iso).toLocaleDateString("es", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    const horaCorta = (iso) => new Date(iso).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+
+    function renderHistorial() {
+      const lista = historialDatos;
+      const caja = $("historial");
+      $("cuentaHistorial").textContent = lista.length === 1 ? "1 competencia" : `${lista.length} competencias`;
+      $("btnCsv").disabled = !lista.length;
+      if (!lista.length) {
+        caja.innerHTML = `<div class="vacia-lista"><div class="grande">📜</div>Todavía no hay competencias guardadas.<br>Se guardan solas al cerrar la votación.</div>`;
+        return;
+      }
+      caja.innerHTML = lista.map((c, i) => {
+        const numero = lista.length - i;
+        const ganadores = c.participantes.filter((p) => p.puesto === 1 && p.votos > 0);
+        const cuando = `${fechaCorta(c.empezo)} · ${horaCorta(c.empezo)}${c.termino ? " – " + horaCorta(c.termino) : " · en curso"}`;
+        const medalla = (p) => ({ 1: "🥇", 2: "🥈", 3: "🥉" }[p] ?? p + "°");
+        return `
+          <article class="comp ${c.actual ? "actual" : ""} entra" style="--i:${i}">
+            <div class="comp-cabeza">
+              <div>
+                <h3>Competencia #${numero}</h3>
+                <p class="fecha">${cuando}</p>
+              </div>
+              ${c.actual ? '<span class="badge badge-pendiente">Actual</span>' : ""}
+            </div>
+            <div class="ganador">${ganadores.length
+              ? `🏆 <strong>${ganadores.map((g) => escapeHtml(g.nombre)).join(" y ")}</strong> · ${ganadores[0].votos} ${ganadores[0].votos === 1 ? "voto" : "votos"}`
+              : "Sin votos registrados"}</div>
+            <div class="chips-comp">
+              <span>👥 ${c.participantes.length} ${c.participantes.length === 1 ? "participante" : "participantes"}</span>
+              <span>❤ ${c.votos.length} ${c.votos.length === 1 ? "voto" : "votos"}</span>
+            </div>
+            <details>
+              <summary>Resultados</summary>
+              <ul class="ya">${c.participantes.map((p) => `
+                <li class="${p.puesto === 1 && p.votos > 0 ? "p1" : ""}"><span class="m">${medalla(p.puesto)}</span><span class="n">${escapeHtml(p.nombre)}<br><small style="color: var(--muted); font-weight: 400">${escapeHtml(p.cancion)} · turno ${p.turno}</small></span><span class="v">${p.votos} ${p.votos === 1 ? "voto" : "votos"}</span></li>`).join("")}
+              </ul>
+            </details>
+            <details>
+              <summary>Quién votó (${c.votos.length})</summary>
+              ${c.votos.length
+                ? c.votos.map((v) => `
+                  <div class="voto-h"><span class="q"><strong>${escapeHtml(v.votante)}</strong> votó por ${escapeHtml(v.participante)}</span><time>${horaCorta(v.hora)}</time></div>`).join("")
+                : `<p class="vacia" style="padding: 8px 0">Nadie votó en esta competencia.</p>`}
+            </details>
+          </article>`;
+      }).join("");
+    }
+
+    // Los nombres los escribe el público: una celda que empieza con = + - @ sería
+    // una fórmula al abrir el archivo en Excel. Se neutraliza con un apóstrofo.
+    function celda(valor) {
+      let s = String(valor ?? "");
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+
+    $("btnCsv").addEventListener("click", () => {
+      // Punto y coma: es el separador que espera Excel en español.
+      const filas = [["Competencia", "Fecha", "Inicio", "Fin", "Puesto", "Turno", "Participante", "Canción", "Votos", "Votantes"]];
+      historialDatos.forEach((c, i) => {
+        const numero = historialDatos.length - i;
+        for (const p of c.participantes) {
+          const votantes = c.votos.filter((v) => v.participante === p.nombre).map((v) => v.votante).join(", ");
+          filas.push([numero, new Date(c.empezo).toLocaleDateString("es"), horaCorta(c.empezo), c.termino ? horaCorta(c.termino) : "en curso",
+            p.puesto, p.turno, p.nombre, p.cancion, p.votos, votantes]);
+        }
+      });
+      const csv = "﻿" + filas.map((f) => f.map(celda).join(";")).join("\r\n");
+      const enlace = document.createElement("a");
+      enlace.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      enlace.download = `historial-karaoke-cevaz-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.append(enlace);
+      enlace.click();
+      enlace.remove();
+      setTimeout(() => URL.revokeObjectURL(enlace.href), 1000);
+      toast("⬇ Historial descargado");
     });
 
     // ---------- Carga ----------
