@@ -538,3 +538,128 @@ $$;
 
 revoke all on function quitar_voto(uuid) from public;
 grant execute on function quitar_voto(uuid) to anon, authenticated;
+
+-- ---------- "orden" = turno en la fila (1..n, sin huecos ni repetidos) ----------
+-- Agregar en el turno N corre un lugar a quien estaba en N y a los de abajo;
+-- editar mueve y reacomoda; borrar hace subir a los de abajo.
+alter table participantes alter column orden set not null;
+alter table participantes drop constraint if exists turno_unico;
+-- Se verifica al final de cada sentencia, así se pueden correr varios turnos de una.
+alter table participantes add constraint turno_unico unique (orden) deferrable initially immediate;
+
+create or replace function agregar_participante(
+  p_clave text, p_nombre text, p_cancion text, p_orden integer default null
+)
+returns participantes
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  fila participantes;
+  n integer;
+  k integer;
+begin
+  if not _clave_admin_valida(p_clave) then
+    raise exception 'Clave incorrecta';
+  end if;
+  -- Dos admins reordenando a la vez se esperan uno al otro.
+  perform pg_advisory_xact_lock(hashtext('karaoke_turnos'));
+  select count(*) into n from participantes;
+  k := least(greatest(coalesce(p_orden, n + 1), 1), n + 1);
+  update participantes set orden = orden + 1 where orden >= k;
+  insert into participantes (nombre, cancion, orden)
+  values (trim(p_nombre), trim(p_cancion), k)
+  returning * into fila;
+  return fila;
+end;
+$$;
+
+create or replace function editar_participante(
+  p_clave text, p_id uuid, p_nombre text, p_cancion text, p_orden integer default null
+)
+returns participantes
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  fila participantes;
+  n integer;
+  a integer;
+  b integer;
+begin
+  if not _clave_admin_valida(p_clave) then
+    raise exception 'Clave incorrecta';
+  end if;
+  perform pg_advisory_xact_lock(hashtext('karaoke_turnos'));
+  select orden into a from participantes where id = p_id;
+  if a is null then
+    raise exception 'Participante no encontrado';
+  end if;
+  select count(*) into n from participantes;
+  b := least(greatest(coalesce(p_orden, a), 1), n);
+  -- Una sola sentencia: la restricción de turno único se revisa al terminarla.
+  update participantes
+  set orden = case
+    when id = p_id then b
+    when b < a then orden + 1
+    else orden - 1
+  end
+  where orden between least(a, b) and greatest(a, b);
+  update participantes
+  set nombre = trim(p_nombre), cancion = trim(p_cancion)
+  where id = p_id
+  returning * into fila;
+  return fila;
+end;
+$$;
+
+create or replace function borrar_participante(p_clave text, p_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  a integer;
+begin
+  if not _clave_admin_valida(p_clave) then
+    raise exception 'Clave incorrecta';
+  end if;
+  perform pg_advisory_xact_lock(hashtext('karaoke_turnos'));
+  delete from participantes where id = p_id returning orden into a;
+  if a is not null then
+    update participantes set orden = orden - 1 where orden > a;
+  end if;
+end;
+$$;
+
+-- ---------- Nueva competencia / otra ronda ----------
+-- Borra votos y el ranking congelado y reabre la votación. Con
+-- p_borrar_participantes también vacía la lista; si no, deja a todos en
+-- "pendiente" para otra ronda con la misma gente.
+create or replace function nueva_competencia(p_clave text, p_borrar_participantes boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not _clave_admin_valida(p_clave) then
+    raise exception 'Clave incorrecta';
+  end if;
+  perform pg_advisory_xact_lock(hashtext('karaoke_turnos'));
+  delete from votos where true;
+  delete from ranking_final where true;
+  if p_borrar_participantes then
+    delete from participantes where true;
+  else
+    update participantes set estado = 'pendiente' where estado <> 'pendiente';
+  end if;
+  update evento set votacion_abierta = true, revelados = 0, total_puestos = 0 where id;
+end;
+$$;
+
+revoke all on function nueva_competencia(text, boolean) from public;
+grant execute on function nueva_competencia(text, boolean) to anon, authenticated;

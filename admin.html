@@ -196,6 +196,24 @@
   }
   .fab:active { transform: scale(0.92); }
 
+  .aviso-cerrada {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(var(--oro-rgb), 0.45);
+    background: rgba(var(--oro-rgb), 0.1);
+    font-size: 0.88rem;
+    line-height: 1.35;
+    animation: entra 0.35s var(--ease) both;
+  }
+  .aviso-cerrada .icono { font-size: 1.3rem; }
+  .aviso-cerrada .texto { flex: 1; min-width: 0; color: var(--muted); }
+  .aviso-cerrada .texto strong { color: var(--accent2); }
+  .aviso-cerrada .btn { flex: 0 0 auto; }
+
   /* ---------- En vivo ---------- */
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
   .stat {
@@ -375,7 +393,8 @@
   .hoja label { display: block; margin: 0 0 6px 2px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; color: var(--muted); }
   .fila-campos { display: flex; gap: 10px; }
   .fila-campos > div { flex: 1; min-width: 0; }
-  .fila-campos .chico { flex: 0 0 92px; }
+  .fila-campos .chico { flex: 0 0 108px; }
+  .fila-campos .chico .campo { padding: 0 12px; text-align: center; }
   .confirmar { text-align: center; }
   .confirmar .icono-grande { font-size: 2.6rem; margin: 2px 0 6px; }
   .confirmar p { margin: 6px 0 0; color: var(--muted); line-height: 1.4; }
@@ -424,6 +443,7 @@
 
       <!-- En vivo -->
       <section class="vista" data-vista="vivo">
+        <div id="avisoCerrada"></div>
         <div class="stats">
           <div class="stat"><span class="valor" id="statParticipantes">–</span><span class="etiqueta">Participantes</span></div>
           <div class="stat"><span class="valor" id="statCantaron">–</span><span class="etiqueta">Cantaron</span></div>
@@ -512,8 +532,8 @@
           <input class="campo" id="cancionInput" required maxlength="120" autocomplete="off" placeholder="Canción — Artista" />
         </div>
         <div class="chico">
-          <label for="ordenInput">Orden</label>
-          <input class="campo" id="ordenInput" type="number" inputmode="numeric" min="1" placeholder="—" />
+          <label for="ordenInput">Turno</label>
+          <input class="campo" id="ordenInput" type="number" inputmode="numeric" min="1" placeholder="Al final" />
         </div>
       </div>
       <div class="hoja-botones">
@@ -771,8 +791,13 @@
       nombreInput.value = p?.nombre ?? "";
       cancionInput.value = p?.cancion ?? "";
       ordenInput.value = p?.orden ?? "";
+      // Agregando se puede ir un lugar más allá del último (= al final); editando, hasta el último.
+      ordenInput.max = participantes.length + (p ? 0 : 1);
+      ordenInput.placeholder = p ? String(p.orden) : "Al final";
       $("tituloForm").textContent = p ? "Editar participante" : "Nuevo participante";
-      $("subForm").textContent = p ? "Los votos que ya tiene se mantienen." : "Se suma al final de la lista de espera.";
+      $("subForm").textContent = p
+        ? "Si le cambiás el turno, los demás se reacomodan. Sus votos se mantienen."
+        : "Turno vacío = al final. Si elegís un turno ocupado, quien estaba ahí y los de abajo bajan un lugar.";
       btnGuardar.firstElementChild.textContent = p ? "Guardar cambios" : "Agregar";
       abrirHoja(hojaForm);
       setTimeout(() => nombreInput.focus(), 120);
@@ -793,11 +818,11 @@
       await conBoton(btnGuardar, async () => {
         try {
           if (editando) {
-            await llamar("editar_participante", { p_id: editando, ...params });
-            toast(`✏️ Cambios guardados: ${params.p_nombre}`);
+            const fila = await llamar("editar_participante", { p_id: editando, ...params });
+            toast(`✏️ Guardado: ${params.p_nombre} (turno ${fila.orden})`);
           } else {
-            await llamar("agregar_participante", params);
-            toast(`➕ Agregado: ${params.p_nombre} 🎶`);
+            const fila = await llamar("agregar_participante", params);
+            toast(`➕ ${params.p_nombre} quedó en el turno ${fila.orden} 🎶`);
           }
           cerrarHoja(hojaForm);
           await cargar();
@@ -990,6 +1015,15 @@
     }
 
     // ---------- Dibujo: Votos ----------
+    const TOP_RANKING = 10;
+    let rankingCompleto = false;
+
+    $("resultados").addEventListener("click", (e) => {
+      if (!e.target.closest("[data-ranking]")) return;
+      rankingCompleto = !rankingCompleto;
+      renderResultados();
+    });
+
     function renderResultados() {
       const total = listaVotos.length;
       fijarStat("statVotos", String(total));
@@ -1006,9 +1040,15 @@
       }
       const max = ranking[0].n;
       const medallas = ["🥇", "🥈", "🥉"];
+      // Con muchos participantes el ranking completo tapaba "Quién votó": arranca en el top.
+      const visibles = rankingCompleto ? ranking : ranking.slice(0, TOP_RANKING);
+      const resto = ranking.length - TOP_RANKING;
+      const botonRanking = resto > 0
+        ? `<button class="btn btn-secundario btn-chico btn-ancho" data-ranking type="button" style="margin-top: 14px"><span>${rankingCompleto ? "Ver solo el top " + TOP_RANKING : `Ver ranking completo (${resto} más)`}</span></button>`
+        : "";
       contenedor.innerHTML = `
         <div class="ranking">
-          ${ranking.map((p, i) => `
+          ${visibles.map((p, i) => `
             <div class="fila-rank">
               <span class="medalla ${i < 3 ? "podio" : ""}">${medallas[i] ?? i + 1}</span>
               <span class="quien">${escapeHtml(p.nombre)}</span>
@@ -1016,6 +1056,7 @@
               <div class="barra"><div data-id="${p.id}" style="width: ${anchosAnteriores.get(p.id) ?? 0}%"></div></div>
             </div>`).join("")}
         </div>
+        ${botonRanking}
         <div class="pie"><span>🔒 Solo vos ves estos números</span><span>${new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span></div>`;
       const nuevos = new Map(ranking.map((p) => [p.id, Math.round((p.n / max) * 100)]));
       requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -1106,8 +1147,26 @@
     // ---------- Dibujo: Final ----------
     let revelacion = null;
 
+    // Con la votación cerrada el público ve los resultados, no la lista: hay que
+    // avisarlo en En vivo, o se arranca otra ronda sin darse cuenta.
+    function renderAvisoCerrada() {
+      const caja = $("avisoCerrada");
+      if (!revelacion || revelacion.votacion_abierta) {
+        caja.innerHTML = "";
+        return;
+      }
+      const terminada = revelacion.total > 0 && revelacion.revelados === revelacion.total;
+      caja.innerHTML = `
+        <div class="aviso-cerrada">
+          <span class="icono">🔒</span>
+          <span class="texto"><strong>Votación cerrada.</strong> El público está viendo ${terminada ? "los resultados finales" : "la revelación"}, no la lista.${terminada ? " Para seguir, empezá una competencia nueva." : ""}</span>
+          <button class="btn btn-secundario btn-chico" data-ir="final" type="button"><span>Ir a Final</span></button>
+        </div>`;
+    }
+
     function renderRevelar() {
       if (!revelacion) return;
+      renderAvisoCerrada();
       const { votacion_abierta, revelados, total, puestos } = revelacion;
       const caja = $("revelar");
       $("estadoFinal").textContent = votacion_abierta ? "Votación abierta" : `${revelados} de ${total} revelados`;
@@ -1134,15 +1193,17 @@
       } else {
         const ganadores = puestos.filter((p) => p.puesto === 1).map((p) => escapeHtml(p.nombre)).join(" y ");
         titulo = `¡Ganó ${ganadores}!`;
-        texto = "Ya se reveló todo en la pantalla pública. 🎉";
-        principal = "";
+        texto = "Ya se reveló todo en la pantalla pública. 🎉 El público va a seguir viendo estos resultados hasta que empieces otra competencia.";
+        principal = `
+          <button class="btn btn-primario" data-revelar="nueva" type="button"><span>✨ Nueva competencia</span></button>
+          <button class="btn btn-secundario" data-revelar="ronda" type="button"><span>🔁 Otra ronda con los mismos</span></button>`;
       }
       caja.innerHTML = `
         <div class="anillo" style="--p:${pct}"><div>${revelados}<small>de ${total}</small></div></div>
         <h3>${titulo}</h3>
         <p>${texto}</p>
         ${principal}
-        <button class="btn btn-secundario" data-revelar="reabrir" type="button"><span>↺ Reabrir votación</span></button>
+        ${proximo > 0 ? `<button class="btn btn-secundario" data-revelar="reabrir" type="button"><span>↺ Reabrir votación</span></button>` : ""}
         ${ya ? `<ul class="ya">${ya}</ul>` : ""}`;
     }
 
@@ -1158,6 +1219,14 @@
         const ok = await confirmar({ icono: "↺", titulo: "¿Reabrir la votación?", texto: "Se oculta lo revelado y el público puede volver a votar.", si: "Reabrir", peligro: true });
         if (!ok) return;
       }
+      if (accion === "nueva") {
+        const ok = await confirmar({ icono: "✨", titulo: "¿Empezar una competencia nueva?", texto: "Se borran todos los participantes y los votos, y el público vuelve a la pantalla de votación. No se puede deshacer.", si: "Empezar de cero", peligro: true });
+        if (!ok) return;
+      }
+      if (accion === "ronda") {
+        const ok = await confirmar({ icono: "🔁", titulo: "¿Otra ronda con los mismos?", texto: "Se borran los votos y todos vuelven a estar por cantar, en el mismo orden. El público vuelve a la pantalla de votación.", si: "Empezar otra ronda", peligro: true });
+        if (!ok) return;
+      }
       await accionSobre(null, boton, async () => {
         if (accion === "cerrar") {
           await llamar("cerrar_votacion", {});
@@ -1170,6 +1239,10 @@
           } else {
             toast(`✨ Revelados ${n} de ${revelacion.total}`, "revelar");
           }
+        } else if (accion === "nueva" || accion === "ronda") {
+          await llamar("nueva_competencia", { p_borrar_participantes: accion === "nueva" });
+          toast(accion === "nueva" ? "✨ Competencia nueva: agregá a los participantes" : "🔁 Otra ronda: todos vuelven a estar por cantar", "revelar");
+          irA(accion === "nueva" ? "lista" : "vivo");
         } else {
           await llamar("reabrir_votacion", {});
           toast("↺ Votación abierta de nuevo", "revelar");
