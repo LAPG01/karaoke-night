@@ -250,3 +250,162 @@ revoke all on function lista_votos(text) from public;
 grant execute on function votar(uuid, text, uuid) to anon, authenticated;
 grant execute on function mi_voto(uuid) to anon, authenticated;
 grant execute on function lista_votos(text) to anon, authenticated;
+
+-- ---------- Revelación de resultados ----------
+-- Estado público del evento: una sola fila.
+create table if not exists evento (
+  id boolean primary key default true check (id),
+  votacion_abierta boolean not null default true,
+  revelados integer not null default 0 check (revelados >= 0),
+  total_puestos integer not null default 0 check (total_puestos >= 0)
+);
+insert into evento (id) values (true) on conflict (id) do nothing;
+
+alter table evento enable row level security;
+drop policy if exists "lectura publica" on evento;
+create policy "lectura publica" on evento for select to anon, authenticated using (true);
+grant select on evento to anon, authenticated;
+
+-- Foto del ranking al cerrar la votación. Privada: el público solo recibe
+-- lo ya revelado, vía estado_revelacion().
+create table if not exists ranking_final (
+  orden integer primary key,
+  puesto integer not null,
+  nombre text not null,
+  cancion text not null,
+  votos integer not null
+);
+alter table ranking_final enable row level security;
+
+create or replace function cerrar_votacion(p_clave text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not _clave_admin_valida(p_clave) then
+    raise exception 'Clave incorrecta';
+  end if;
+  delete from ranking_final where true;
+  insert into ranking_final (orden, puesto, nombre, cancion, votos)
+  select
+    row_number() over (order by coalesce(v.n, 0) desc, p.orden nulls last, p.created_at),
+    rank() over (order by coalesce(v.n, 0) desc),
+    p.nombre, p.cancion, coalesce(v.n, 0)
+  from participantes p
+  left join (select participante_id, count(*)::int as n from votos group by participante_id) v
+    on v.participante_id = p.id;
+  update evento
+  set votacion_abierta = false,
+      revelados = 0,
+      total_puestos = (select count(*) from ranking_final)
+  where id;
+end;
+$$;
+
+create or replace function revelar_siguiente(p_clave text)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  n integer;
+begin
+  if not _clave_admin_valida(p_clave) then
+    raise exception 'Clave incorrecta';
+  end if;
+  update evento
+  set revelados = least(revelados + 1, total_puestos)
+  where id and not votacion_abierta
+  returning revelados into n;
+  if n is null then
+    raise exception 'Primero cerrá la votación';
+  end if;
+  return n;
+end;
+$$;
+
+create or replace function reabrir_votacion(p_clave text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not _clave_admin_valida(p_clave) then
+    raise exception 'Clave incorrecta';
+  end if;
+  delete from ranking_final where true;
+  update evento set votacion_abierta = true, revelados = 0, total_puestos = 0 where id;
+end;
+$$;
+
+-- Público: estado + solo los puestos ya revelados (se revela del último al primero).
+create or replace function estado_revelacion()
+returns json
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select json_build_object(
+    'votacion_abierta', e.votacion_abierta,
+    'revelados', e.revelados,
+    'total', e.total_puestos,
+    'puestos', coalesce((
+      select json_agg(json_build_object(
+        'orden', r.orden, 'puesto', r.puesto, 'nombre', r.nombre,
+        'cancion', r.cancion, 'votos', r.votos) order by r.orden)
+      from ranking_final r
+      where r.orden > e.total_puestos - e.revelados
+    ), '[]'::json)
+  )
+  from evento e
+  where e.id;
+$$;
+
+-- Con la votación cerrada no se aceptan votos (reemplaza la versión de arriba).
+create or replace function votar(p_dispositivo uuid, p_votante text, p_participante uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  ya uuid;
+begin
+  if not (select votacion_abierta from evento where id) then
+    raise exception 'La votación está cerrada';
+  end if;
+  if length(trim(coalesce(p_votante, ''))) < 2 then
+    raise exception 'Escribí tu nombre';
+  end if;
+  select participante_id into ya from votos where dispositivo = p_dispositivo;
+  if ya is not null then
+    raise exception 'Ya votaste';
+  end if;
+  insert into votos (dispositivo, votante, participante_id)
+  values (p_dispositivo, left(trim(p_votante), 40), p_participante);
+  return p_participante;
+exception
+  when unique_violation then raise exception 'Ya votaste';
+  when foreign_key_violation then raise exception 'Ese participante ya no está en la lista';
+end;
+$$;
+
+revoke all on function cerrar_votacion(text) from public;
+revoke all on function revelar_siguiente(text) from public;
+revoke all on function reabrir_votacion(text) from public;
+revoke all on function estado_revelacion() from public;
+grant execute on function cerrar_votacion(text) to anon, authenticated;
+grant execute on function revelar_siguiente(text) to anon, authenticated;
+grant execute on function reabrir_votacion(text) to anon, authenticated;
+grant execute on function estado_revelacion() to anon, authenticated;
+
+do $$
+begin
+  alter publication supabase_realtime add table evento;
+exception when duplicate_object then null;
+end $$;

@@ -55,7 +55,7 @@ function clasificar(lista) {
 
 // Un cambio de turno dispara dos eventos (el que termina y el que empieza):
 // se agrupan para hacer una sola consulta.
-function suscribirCambios(canal, alCambiar, alEstado) {
+function suscribirCambios(canal, alCambiar, alEstado, tablas = ["participantes"]) {
   let espera;
   const programar = () => {
     clearTimeout(espera);
@@ -64,10 +64,30 @@ function suscribirCambios(canal, alCambiar, alEstado) {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") programar();
   });
-  return supabaseClient
-    .channel(canal)
-    .on("postgres_changes", { event: "*", schema: "public", table: "participantes" }, programar)
-    .subscribe((estado) => alEstado?.(estado));
+  let canalRt = supabaseClient.channel(canal);
+  for (const table of tablas) {
+    canalRt = canalRt.on("postgres_changes", { event: "*", schema: "public", table }, programar);
+  }
+  return canalRt.subscribe((estado) => alEstado?.(estado));
+}
+
+function traerRevelacion() {
+  return conCarga(supabaseClient.rpc("estado_revelacion"));
+}
+
+function lluviaDeConfeti(emojis = ["🎉", "✨", "🏆", "🎤", "⭐"], cantidad = 28) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  for (let i = 0; i < cantidad; i++) {
+    const c = document.createElement("span");
+    c.className = "confeti";
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random() * 100 + "vw";
+    c.style.setProperty("--dx", Math.random() * 80 - 40 + "px");
+    c.style.setProperty("--rot", Math.random() * 60 - 30 + "deg");
+    c.style.animationDelay = Math.random() * 0.6 + "s";
+    c.addEventListener("animationend", () => c.remove(), { once: true });
+    document.body.append(c);
+  }
 }
 
 function toast(texto, tipo = "ok") {

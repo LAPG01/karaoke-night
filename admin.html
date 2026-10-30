@@ -11,134 +11,325 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
 <style>
+  main { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+  .toasts { bottom: calc(96px + env(safe-area-inset-bottom)); }
+
   .card {
     background: var(--card);
     border: 1px solid var(--line);
-    border-radius: var(--radius);
+    border-radius: 20px;
     padding: 18px;
   }
-
-  /* Login */
-  #pantallaClave { max-width: 380px; margin: 0 auto; padding-top: calc(12vh + env(safe-area-inset-top)); text-align: center; }
-  #pantallaClave .logo {
+  .logo-tile {
     display: grid;
     place-items: center;
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 16px;
-    border-radius: 20px;
-    background: var(--grad);
-    font-size: 1.8rem;
-    box-shadow: 0 8px 30px rgba(255, 45, 120, 0.4);
-  }
-  #pantallaClave h1 { margin: 0; font-size: 1.6rem; font-weight: 800; }
-  #pantallaClave .sub { margin: 6px 0 24px; color: var(--muted); }
-  #pantallaClave .card { text-align: left; }
-  .mensaje-error { margin: 10px 0 0; color: #ff9a9a; font-size: 0.88rem; text-align: center; }
-
-  /* Formularios */
-  label { display: block; margin-bottom: 6px; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
-  input {
-    width: 100%;
-    min-height: 48px;
-    margin-bottom: 14px;
-    padding: 0 14px;
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: #120a20;
-    color: var(--text);
-    font: inherit;
-    font-size: 1rem; /* 16px: evita el zoom automático de iOS */
-    transition: border-color 0.2s, box-shadow 0.2s;
+    background: var(--grad);
+    font-size: 1.15rem;
+    box-shadow: 0 4px 16px rgba(255, 45, 120, 0.35);
   }
-  input:focus { outline: none; border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(255, 210, 63, 0.18); }
-  input::placeholder { color: var(--dim); }
-  .fila-campos { display: flex; gap: 12px; }
-  .fila-campos > div { flex: 1; min-width: 0; }
-  .fila-campos .chico { flex: 0 0 96px; }
-  .acciones-form { display: flex; gap: 10px; flex-wrap: wrap; }
-  .acciones-form .btn { flex: 1 1 160px; }
 
-  /* Cabecera del panel */
-  .top {
+  /* ---------- Login ---------- */
+  .login {
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 24px 0;
+  }
+  .login-card {
+    width: min(100%, 380px);
+    padding: 30px 22px 22px;
+    border-radius: 26px;
+    border: 1px solid var(--line);
+    background: linear-gradient(170deg, rgba(42, 21, 72, 0.9), rgba(26, 15, 46, 0.92));
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 45, 120, 0.08);
+    text-align: center;
+  }
+  .login-card .logo-tile { width: 72px; height: 72px; border-radius: 24px; font-size: 2.1rem; margin: 0 auto 16px; box-shadow: 0 10px 34px rgba(255, 45, 120, 0.45); }
+  .login-card h1 { margin: 0; font-size: 1.7rem; font-weight: 800; }
+  .login-card .sub { margin: 6px 0 22px; color: var(--muted); }
+  .clave-caja { position: relative; }
+  .clave-caja .campo { padding-right: 56px; text-align: center; letter-spacing: 0.04em; }
+  .ver-clave {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+  .ver-clave:hover { background: rgba(255, 255, 255, 0.06); }
+  .mensaje-error { margin: 12px 0 0; color: #ff9a9a; font-size: 0.88rem; }
+
+  /* ---------- Cabecera ---------- */
+  .cabecera {
+    position: sticky;
+    top: 0;
+    z-index: 20;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: calc(16px + env(safe-area-inset-top)) 0 4px;
+    gap: 10px;
+    margin: 0 -16px;
+    padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+    background: linear-gradient(to bottom, rgba(14, 7, 24, 0.96) 65%, rgba(14, 7, 24, 0));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
-  .top h1 { margin: 0; font-size: 1.25rem; font-weight: 800; }
-  .top h1 small { display: block; font-size: 0.75rem; font-weight: 500; color: var(--muted); }
-  .top .links { display: flex; gap: 8px; }
+  .marca { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .marca h1 { margin: 0; font-size: 1.08rem; font-weight: 800; line-height: 1.1; }
+  .marca p { margin: 0; font-size: 0.72rem; color: var(--muted); }
+  .cabecera .lado { display: flex; align-items: center; gap: 6px; }
+  .vivo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.04);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  @media (max-width: 420px) {
+    .vivo #vivoTexto { display: none; }
+    .vivo { padding: 8px; }
+  }
+  .icono-btn {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    font-size: 1rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.12s;
+  }
+  .icono-btn:hover { background: rgba(255, 255, 255, 0.1); }
+  .icono-btn:active { transform: scale(0.94); }
 
-  /* Nivel 1: control de escena */
-  .escena {
-    margin-top: 16px;
-    padding: 18px;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 45, 120, 0.35);
-    background: linear-gradient(160deg, #2a1548, var(--card) 75%);
-    box-shadow: 0 0 36px rgba(255, 45, 120, 0.15);
+  /* ---------- Vistas y navegación inferior ---------- */
+  .vista { display: none; }
+  .vista.activa { display: block; animation: entra 0.35s var(--ease) both; }
+  .titulo-vista { display: flex; align-items: baseline; justify-content: space-between; margin: 10px 0 14px; }
+  .titulo-vista h2 { margin: 0; font-size: 1.45rem; font-weight: 800; }
+  .titulo-vista span { color: var(--muted); font-size: 0.85rem; }
+
+  .nav {
+    position: fixed;
+    left: 50%;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    width: min(calc(100% - 24px), 480px);
+    padding: 6px;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(28, 16, 50, 0.86);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
   }
-  .escena-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .escena .nombre { font-size: 1.6rem; font-weight: 800; line-height: 1.1; overflow-wrap: anywhere; }
-  .escena .cancion { margin-top: 4px; color: #e3d6ff; overflow-wrap: anywhere; }
-  .escena .vacia { color: var(--muted); }
-  .escena .btn { margin-top: 16px; width: 100%; min-height: 54px; font-size: 1.02rem; }
+  .nav button {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-height: 54px;
+    padding: 6px 2px;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.68rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.25s, color 0.25s;
+  }
+  .nav button .ic { font-size: 1.25rem; line-height: 1.2; transition: transform 0.25s var(--ease); }
+  .nav button.activo { background: rgba(255, 45, 120, 0.16); color: var(--text); }
+  .nav button.activo .ic { transform: translateY(-1px) scale(1.12); }
+  .nav .globo {
+    position: absolute;
+    top: 4px;
+    right: calc(50% - 22px);
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.66rem;
+    font-weight: 800;
+    line-height: 18px;
+  }
+
+  .fab {
+    position: fixed;
+    right: max(16px, calc(50% - 324px));
+    bottom: calc(96px + env(safe-area-inset-bottom));
+    z-index: 25;
+    display: grid;
+    place-items: center;
+    width: 58px;
+    height: 58px;
+    border: 0;
+    border-radius: 20px;
+    background: var(--grad);
+    color: #1a0f2b;
+    font-size: 1.9rem;
+    font-weight: 500;
+    line-height: 1;
+    box-shadow: 0 12px 30px rgba(255, 45, 120, 0.45);
+    cursor: pointer;
+    transition: transform 0.15s var(--ease);
+    animation: entra 0.35s var(--ease) both;
+  }
+  .fab:active { transform: scale(0.92); }
+
+  /* ---------- En vivo ---------- */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .stat {
+    padding: 14px 12px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+  .stat .valor { display: block; font-size: 1.6rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat .valor small { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+  .stat .etiqueta { font-size: 0.72rem; color: var(--muted); font-weight: 600; letter-spacing: 0.04em; }
+  .stat:nth-child(3) .valor { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .pop { animation: pop 0.45s var(--ease); }
+  @keyframes pop { 40% { transform: scale(1.18); } }
+
+  .escena {
+    position: relative;
+    overflow: hidden;
+    padding: 20px 18px 18px;
+    border-radius: 24px;
+    border: 2px solid transparent;
+    background:
+      linear-gradient(160deg, #2a1548, var(--card) 70%) padding-box,
+      linear-gradient(120deg, var(--accent), var(--accent2), var(--cyan), var(--accent)) border-box;
+    background-size: 100% 100%, 300% 300%;
+    box-shadow: 0 0 44px rgba(255, 45, 120, 0.2);
+    animation: borde 6s linear infinite;
+  }
+  .escena.quieta { animation: none; background: var(--card) padding-box, var(--line) border-box; box-shadow: none; }
+  @keyframes borde { to { background-position: 0 0, 300% 0; } }
+  .escena-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .escena .nombre { font-size: clamp(1.6rem, 7vw, 2.1rem); font-weight: 800; line-height: 1.05; overflow-wrap: anywhere; }
+  .escena .cancion { margin-top: 6px; color: #e3d6ff; overflow-wrap: anywhere; }
+  .escena .vacia { color: var(--muted); font-size: 1.05rem; }
+  .escena .btn { position: relative; margin-top: 18px; width: 100%; min-height: 56px; font-size: 1.02rem; }
   .escena .btn small { font-weight: 500; opacity: 0.75; }
 
-  /* Lista */
+  .proximos { margin-top: 14px; }
+  .proximos-cabeza { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .proximos-cabeza h3 { margin: 0; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .link { border: 0; background: none; padding: 4px; color: var(--accent2); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+  .proximo { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .proximo:first-of-type { border-top: 0; }
+  .proximo .num { flex: 0 0 auto; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; background: rgba(255, 255, 255, 0.06); font-size: 0.82rem; font-weight: 700; color: var(--muted); }
+  .proximo:first-of-type .num { background: rgba(255, 210, 63, 0.14); color: var(--accent2); }
+  .proximo .datos { flex: 1; min-width: 0; }
+  .proximo .nombre { font-weight: 600; overflow-wrap: anywhere; }
+  .proximo .cancion { color: var(--muted); font-size: 0.82rem; overflow-wrap: anywhere; }
+  .vacio-suave { padding: 6px 0; color: var(--muted); font-size: 0.9rem; }
+
+  /* ---------- Participantes ---------- */
+  .filtros { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; }
+  .filtros::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+  }
+  .chip.activo { background: var(--text); color: #1a0f2b; border-color: var(--text); }
+  .chip b { font-weight: 800; margin-left: 4px; opacity: 0.7; }
+
   .lista { display: flex; flex-direction: column; gap: 10px; }
   .participante {
     padding: 14px;
-    border-radius: var(--radius);
+    border-radius: 18px;
     background: var(--card);
     border: 1px solid var(--line);
     transition: opacity 0.2s, border-color 0.2s;
   }
-  .participante.es-cantando { border-color: rgba(255, 45, 120, 0.5); background: linear-gradient(160deg, #26123f, var(--card)); }
-  .participante.es-listo { opacity: 0.6; }
-  .participante.editando { border-color: var(--accent2); box-shadow: 0 0 0 1px var(--accent2); opacity: 1; }
+  .participante.es-cantando { border-color: rgba(255, 45, 120, 0.55); background: linear-gradient(160deg, #2a1446, var(--card)); box-shadow: 0 0 24px rgba(255, 45, 120, 0.12); }
+  .participante.es-listo .datos, .participante.es-listo .num { opacity: 0.6; }
   .participante.ocupado { opacity: 0.45; pointer-events: none; }
-  .participante .cabeza { display: flex; align-items: flex-start; gap: 12px; }
+  .participante .cabeza { display: flex; align-items: center; gap: 12px; }
   .participante .num {
     flex: 0 0 auto;
     display: grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
     background: rgba(255, 255, 255, 0.06);
-    font-weight: 700;
-    font-size: 0.9rem;
+    font-weight: 800;
+    font-size: 0.92rem;
     color: var(--muted);
   }
   .participante.es-cantando .num { background: var(--grad); color: #1a0f2b; }
   .participante .datos { flex: 1; min-width: 0; }
   .participante .nombre { font-weight: 700; overflow-wrap: anywhere; }
-  .participante .cancion { color: var(--muted); font-size: 0.88rem; overflow-wrap: anywhere; }
-  .participante .badge { margin-top: 2px; }
+  .participante .cancion { color: var(--muted); font-size: 0.86rem; overflow-wrap: anywhere; }
+  .participante .meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .chip-votos { font-size: 0.78rem; font-weight: 700; color: #ff86b0; white-space: nowrap; }
   .participante .acciones { display: flex; gap: 8px; margin-top: 12px; }
   .participante .acciones .btn { flex: 1; }
-  .participante .acciones .btn-icono { flex: 0 0 46px; padding: 0; }
+  .participante .acciones .icono-btn { flex: 0 0 44px; width: 44px; height: 40px; }
+  .participante .acciones .icono-btn.peligro { border-color: rgba(255, 107, 107, 0.35); }
 
-  .vacia-lista { padding: 28px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: var(--radius); }
+  .vacia-lista { padding: 34px 16px; text-align: center; color: var(--muted); border: 1px dashed rgba(255, 255, 255, 0.14); border-radius: 20px; }
+  .vacia-lista .grande { font-size: 2.2rem; margin-bottom: 6px; }
 
-  /* Resultados */
-  .ranking { display: flex; flex-direction: column; gap: 10px; }
-  .puesto { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 4px 10px; }
-  .puesto .medalla { font-size: 1.15rem; text-align: center; color: var(--muted); font-weight: 700; font-size: 0.9rem; }
-  .puesto .medalla.top { font-size: 1.2rem; }
-  .puesto .quien { min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
-  .puesto .cuantos { font-weight: 800; font-variant-numeric: tabular-nums; }
-  .puesto .barra { grid-column: 2 / 4; height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
-  .puesto .barra > div { height: 100%; border-radius: inherit; background: var(--grad); transition: width 0.7s var(--ease); }
-  .puesto:first-child .quien { color: var(--accent2); }
-  .resultados-pie { margin-top: 14px; font-size: 0.8rem; color: var(--muted); display: flex; justify-content: space-between; }
-  .chip-votos { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+  /* ---------- Votos ---------- */
+  .ranking { display: flex; flex-direction: column; gap: 14px; }
+  .fila-rank { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 6px 10px; }
+  .fila-rank .medalla { text-align: center; font-size: 0.9rem; font-weight: 800; color: var(--muted); }
+  .fila-rank .medalla.podio { font-size: 1.3rem; }
+  .fila-rank .quien { min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+  .fila-rank:first-child .quien { color: var(--accent2); }
+  .fila-rank .cuantos { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .fila-rank .barra { grid-column: 2 / 4; height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+  .fila-rank .barra > div { height: 100%; border-radius: inherit; background: var(--grad); transition: width 0.7s var(--ease); }
+  .pie { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 0.78rem; color: var(--muted); display: flex; justify-content: space-between; gap: 10px; }
 
-  /* Quién votó */
-  #filtroVotantes { margin-bottom: 4px; }
+  .buscador { position: relative; }
+  .buscador .campo { padding-left: 42px; min-height: 46px; font-size: 1rem; }
+  .buscador::before { content: "🔍"; position: absolute; left: 14px; top: 13px; font-size: 0.95rem; opacity: 0.6; pointer-events: none; }
   .votantes { display: flex; flex-direction: column; }
   .votante { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border-bottom: 1px solid var(--line); }
   .votante:last-child { border-bottom: 0; }
@@ -146,8 +337,8 @@
     flex: 0 0 auto;
     display: grid;
     place-items: center;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     background: hsl(var(--h) 80% 72%);
     color: #1a0f2b;
@@ -159,102 +350,202 @@
   .votante .a-quien { font-size: 0.84rem; color: var(--muted); overflow-wrap: anywhere; }
   .votante .a-quien strong { color: var(--text); font-weight: 600; }
   .votante time { flex: 0 0 auto; font-size: 0.75rem; color: var(--dim); font-variant-numeric: tabular-nums; }
-  .votantes .vacia { padding: 18px 0 8px; text-align: center; color: var(--muted); }
+  .vacia { padding: 18px 0 8px; text-align: center; color: var(--muted); }
 
-  .sk-part { padding: 14px; }
-  .sk-part .cabeza { display: flex; gap: 12px; align-items: center; }
-
-  @media (min-width: 560px) {
-    .participante { display: flex; align-items: center; gap: 12px; }
-    .participante .cabeza { flex: 1; min-width: 0; }
-    .participante .acciones { margin-top: 0; }
-    .participante .acciones .btn { flex: 0 0 auto; }
+  /* ---------- Final ---------- */
+  .final-hero { text-align: center; padding: 26px 18px 22px; }
+  .final-hero .grande { font-size: 3.2rem; line-height: 1; animation: rebote 2.4s ease-in-out infinite; }
+  @keyframes rebote { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-8px) rotate(4deg); } }
+  .final-hero h3 { margin: 12px 0 6px; font-size: 1.35rem; font-weight: 800; }
+  .final-hero p { margin: 0 0 18px; color: var(--muted); line-height: 1.4; }
+  .final-hero p strong { color: var(--text); }
+  .final-hero .btn { width: 100%; min-height: 56px; font-size: 1.02rem; }
+  .final-hero .btn + .btn { margin-top: 10px; }
+  .anillo {
+    --p: 0;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 6px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: conic-gradient(var(--accent2) calc(var(--p) * 1%), rgba(255, 255, 255, 0.08) 0);
   }
+  .anillo > div { width: 96px; height: 96px; border-radius: 50%; background: var(--card); display: grid; place-items: center; font-size: 1.6rem; font-weight: 800; }
+  .anillo small { display: block; font-size: 0.7rem; color: var(--muted); font-weight: 600; }
+  .ya { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+  .ya li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.04); font-size: 0.9rem; text-align: left; }
+  .ya li .m { flex: 0 0 auto; width: 28px; text-align: center; font-weight: 800; color: var(--muted); }
+  .ya li .n { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+  .ya li .v { color: var(--muted); white-space: nowrap; font-size: 0.82rem; }
+  .ya li.p1 { background: rgba(255, 210, 63, 0.1); }
+  .ya li.p1 .n { color: var(--accent2); }
+
+  /* ---------- Hojas ---------- */
+  .hoja h3 { margin: 0 0 4px; font-size: 1.35rem; font-weight: 800; }
+  .hoja .sub { margin: 0 0 18px; color: var(--muted); font-size: 0.9rem; }
+  .hoja label { display: block; margin: 0 0 6px 2px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; color: var(--muted); }
+  .fila-campos { display: flex; gap: 10px; }
+  .fila-campos > div { flex: 1; min-width: 0; }
+  .fila-campos .chico { flex: 0 0 92px; }
+  .confirmar { text-align: center; }
+  .confirmar .icono-grande { font-size: 2.6rem; margin: 2px 0 6px; }
+  .confirmar p { margin: 6px 0 0; color: var(--muted); line-height: 1.4; }
+
+  .sk-part { padding: 14px; border-radius: 18px; }
+  .sk-part .cabeza { display: flex; gap: 12px; align-items: center; }
 </style>
 </head>
 <body>
   <div class="barra-carga" id="barraCarga"></div>
 
   <main>
-    <!-- Login -->
-    <section id="pantallaClave" class="oculto">
-      <div class="logo entra" aria-hidden="true">🔒</div>
-      <h1 class="entra" style="--i: 1">Panel de admin</h1>
-      <p class="sub entra" style="--i: 2">Ingresá la clave para administrar la competencia.</p>
-      <form class="card entra" style="--i: 3" id="formClave">
-        <label for="claveInput">Clave de admin</label>
-        <input id="claveInput" type="password" autocomplete="current-password" placeholder="••••••••" />
-        <button class="btn btn-primario btn-ancho" id="btnEntrar" type="submit"><span>Entrar</span></button>
+    <!-- ---------- Login ---------- -->
+    <section id="pantallaClave" class="login oculto">
+      <form class="login-card entra" id="formClave">
+        <div class="logo-tile" aria-hidden="true">🎤</div>
+        <h1>Karaoke Night</h1>
+        <p class="sub">Panel de admin · Ingresá la clave</p>
+        <div class="clave-caja">
+          <input class="campo" id="claveInput" type="password" autocomplete="current-password" placeholder="Clave de admin" aria-label="Clave de admin" />
+          <button class="ver-clave" id="verClave" type="button" aria-label="Mostrar clave">👁</button>
+        </div>
+        <button class="btn btn-primario btn-ancho" id="btnEntrar" type="submit" style="min-height: 52px"><span>Entrar</span></button>
         <p class="mensaje-error oculto" id="mensajeClave" role="alert"></p>
       </form>
     </section>
 
-    <!-- Panel -->
+    <!-- ---------- Panel ---------- -->
     <section id="pantallaAdmin" class="oculto">
-      <header class="top">
-        <h1>🎤 Karaoke Night <small>Panel de admin</small></h1>
-        <div class="links">
-          <a class="btn btn-secundario btn-chico" href="./" target="_blank" rel="noopener"><span>Pantalla ↗</span></a>
-          <button class="btn btn-secundario btn-chico" id="btnSalir" type="button"><span>Salir</span></button>
+      <header class="cabecera">
+        <div class="marca">
+          <div class="logo-tile" aria-hidden="true">🎤</div>
+          <div>
+            <h1>Karaoke Night</h1>
+            <p>Panel de admin</p>
+          </div>
+        </div>
+        <div class="lado">
+          <span class="vivo"><span class="punto-vivo apagado" id="vivoPunto"></span><span id="vivoTexto">…</span></span>
+          <a class="icono-btn" href="./" target="_blank" rel="noopener" aria-label="Abrir la pantalla pública" title="Pantalla pública">↗</a>
+          <button class="icono-btn" id="btnSalir" type="button" aria-label="Cerrar sesión" title="Salir">⏻</button>
         </div>
       </header>
 
-      <section class="escena" id="escena" aria-live="polite">
-        <div class="skeleton" style="background: transparent; border: none">
-          <div class="sk-linea" style="width: 30%; margin-bottom: 16px"></div>
-          <div class="sk-linea" style="width: 70%; height: 22px; margin-bottom: 10px"></div>
-          <div class="sk-linea" style="width: 45%; margin-bottom: 20px"></div>
-          <div class="sk-linea" style="height: 54px; border-radius: 12px"></div>
+      <!-- En vivo -->
+      <section class="vista" data-vista="vivo">
+        <div class="stats">
+          <div class="stat"><span class="valor" id="statParticipantes">–</span><span class="etiqueta">Participantes</span></div>
+          <div class="stat"><span class="valor" id="statCantaron">–</span><span class="etiqueta">Cantaron</span></div>
+          <div class="stat"><span class="valor" id="statVotos">–</span><span class="etiqueta">Votos</span></div>
         </div>
-      </section>
-
-      <h2 class="seccion">Votos del público <span class="cuenta" id="totalVotos">…</span></h2>
-      <section class="card" id="resultados" aria-live="polite">
-        <div class="sk-linea" style="width: 60%; margin-bottom: 10px"></div>
-        <div class="sk-linea" style="height: 8px; margin-bottom: 18px"></div>
-        <div class="sk-linea" style="width: 45%; margin-bottom: 10px"></div>
-        <div class="sk-linea" style="height: 8px"></div>
-      </section>
-
-      <h2 class="seccion">Quién votó <span class="cuenta" id="cuentaVotantes">…</span></h2>
-      <section class="card">
-        <input id="filtroVotantes" type="search" placeholder="Buscar votante o participante…" autocomplete="off" aria-label="Buscar en la lista de votos" />
-        <div class="votantes" id="votantes">
-          <div class="votante"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 40%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 60%"></div></div></div>
-          <div class="votante"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 50%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 45%"></div></div></div>
-        </div>
-        <button class="btn btn-secundario btn-chico btn-ancho oculto" id="btnVerTodos" type="button" style="margin-top: 12px"><span>Ver todos</span></button>
-      </section>
-
-      <h2 class="seccion" id="tituloForm">Agregar participante</h2>
-      <form class="card" id="formParticipante">
-        <input type="hidden" id="idEditando" />
-        <label for="nombreInput">Nombre</label>
-        <input id="nombreInput" required maxlength="80" autocomplete="off" placeholder="Ej: Ana Pérez" />
-        <div class="fila-campos">
-          <div>
-            <label for="cancionInput">Canción</label>
-            <input id="cancionInput" required maxlength="120" autocomplete="off" placeholder="Canción — Artista" />
+        <section class="escena quieta" id="escena" aria-live="polite">
+          <div class="sk-linea" style="width: 30%; margin-bottom: 18px"></div>
+          <div class="sk-linea" style="width: 70%; height: 24px; margin-bottom: 10px"></div>
+          <div class="sk-linea" style="width: 45%; margin-bottom: 22px"></div>
+          <div class="sk-linea" style="height: 56px; border-radius: 12px"></div>
+        </section>
+        <section class="card proximos">
+          <div class="proximos-cabeza">
+            <h3>Próximos</h3>
+            <button class="link" data-ir="lista" type="button">Ver todos →</button>
           </div>
-          <div class="chico">
-            <label for="ordenInput">Orden</label>
-            <input id="ordenInput" type="number" inputmode="numeric" min="1" placeholder="—" />
-          </div>
-        </div>
-        <div class="acciones-form">
-          <button type="submit" class="btn btn-primario" id="btnGuardar"><span>Agregar participante</span></button>
-          <button type="button" class="btn btn-secundario oculto" id="btnCancelarEdicion"><span>Cancelar</span></button>
-        </div>
-      </form>
+          <div id="proximos"><div class="sk-linea" style="width: 60%; margin: 8px 0"></div><div class="sk-linea" style="width: 45%; margin: 14px 0 6px"></div></div>
+        </section>
+      </section>
 
-      <h2 class="seccion">Participantes <span class="cuenta" id="cuenta">…</span></h2>
-      <div class="lista" id="lista">
-        <div class="skeleton sk-part"><div class="cabeza"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 50%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 32%"></div></div></div></div>
-        <div class="skeleton sk-part"><div class="cabeza"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 60%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 40%"></div></div></div></div>
-        <div class="skeleton sk-part"><div class="cabeza"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 42%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 30%"></div></div></div></div>
-      </div>
+      <!-- Participantes -->
+      <section class="vista" data-vista="lista">
+        <div class="titulo-vista"><h2>Participantes</h2><span id="cuenta"></span></div>
+        <div class="filtros" id="filtros" role="tablist" aria-label="Filtrar participantes"></div>
+        <div class="lista" id="lista">
+          <div class="skeleton sk-part"><div class="cabeza"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 50%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 32%"></div></div></div></div>
+          <div class="skeleton sk-part"><div class="cabeza"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 60%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 40%"></div></div></div></div>
+          <div class="skeleton sk-part"><div class="cabeza"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 42%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 30%"></div></div></div></div>
+        </div>
+      </section>
+
+      <!-- Votos -->
+      <section class="vista" data-vista="votos">
+        <div class="titulo-vista"><h2>Votos</h2><span id="totalVotos"></span></div>
+        <section class="card" id="resultados" aria-live="polite">
+          <div class="sk-linea" style="width: 60%; margin-bottom: 10px"></div>
+          <div class="sk-linea" style="height: 8px; margin-bottom: 18px"></div>
+          <div class="sk-linea" style="width: 45%; margin-bottom: 10px"></div>
+          <div class="sk-linea" style="height: 8px"></div>
+        </section>
+        <h2 class="seccion">Quién votó <span class="cuenta" id="cuentaVotantes">…</span></h2>
+        <section class="card">
+          <div class="buscador">
+            <input class="campo" id="filtroVotantes" type="search" placeholder="Buscar votante o participante" autocomplete="off" aria-label="Buscar en la lista de votos" />
+          </div>
+          <div class="votantes" id="votantes">
+            <div class="votante"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 40%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 60%"></div></div></div>
+            <div class="votante"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 50%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 45%"></div></div></div>
+          </div>
+          <button class="btn btn-secundario btn-chico btn-ancho oculto" id="btnVerTodos" type="button" style="margin-top: 12px"><span>Ver todos</span></button>
+        </section>
+      </section>
+
+      <!-- Final -->
+      <section class="vista" data-vista="final">
+        <div class="titulo-vista"><h2>Resultados</h2><span id="estadoFinal"></span></div>
+        <section class="card final-hero" id="revelar" aria-live="polite">
+          <div class="sk-linea" style="width: 50%; margin: 0 auto 14px"></div>
+          <div class="sk-linea" style="height: 56px; border-radius: 12px"></div>
+        </section>
+      </section>
+
+      <button class="fab oculto" id="fab" type="button" aria-label="Agregar participante">+</button>
+
+      <nav class="nav" aria-label="Secciones">
+        <button type="button" data-ir="vivo"><span class="ic">🎤</span>En vivo</button>
+        <button type="button" data-ir="lista"><span class="ic">👥</span>Participantes</button>
+        <button type="button" data-ir="votos"><span class="ic">❤️</span>Votos<span class="globo oculto" id="globoVotos"></span></button>
+        <button type="button" data-ir="final"><span class="ic">🏆</span>Final</button>
+      </nav>
     </section>
   </main>
+
+  <!-- Hoja: agregar / editar -->
+  <div class="hoja-fondo oculto" id="hojaForm">
+    <form class="hoja" id="formParticipante" role="dialog" aria-modal="true" aria-labelledby="tituloForm">
+      <div class="hoja-asa"></div>
+      <h3 id="tituloForm">Nuevo participante</h3>
+      <p class="sub" id="subForm">Se suma al final de la lista de espera.</p>
+      <input type="hidden" id="idEditando" />
+      <label for="nombreInput">Nombre</label>
+      <input class="campo" id="nombreInput" required maxlength="80" autocomplete="off" placeholder="Ej: Ana Pérez" />
+      <div class="fila-campos">
+        <div>
+          <label for="cancionInput">Canción</label>
+          <input class="campo" id="cancionInput" required maxlength="120" autocomplete="off" placeholder="Canción — Artista" />
+        </div>
+        <div class="chico">
+          <label for="ordenInput">Orden</label>
+          <input class="campo" id="ordenInput" type="number" inputmode="numeric" min="1" placeholder="—" />
+        </div>
+      </div>
+      <div class="hoja-botones">
+        <button type="button" class="btn btn-secundario" data-cerrar><span>Cancelar</span></button>
+        <button type="submit" class="btn btn-primario" id="btnGuardar"><span>Agregar</span></button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Hoja: confirmar -->
+  <div class="hoja-fondo oculto" id="hojaConfirmar">
+    <div class="hoja confirmar" role="alertdialog" aria-modal="true" aria-labelledby="confTitulo">
+      <div class="hoja-asa"></div>
+      <div class="icono-grande" id="confIcono"></div>
+      <h3 id="confTitulo"></h3>
+      <p id="confTexto"></p>
+      <div class="hoja-botones">
+        <button type="button" class="btn btn-secundario" id="confNo"><span>Cancelar</span></button>
+        <button type="button" class="btn btn-primario" id="confSi"><span></span></button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
@@ -275,6 +566,81 @@
     let suscrito = false;
     const animador = crearAnimador();
 
+    // ---------- Vistas ----------
+    let vistaActual = sessionStorage.getItem("karaoke_vista") || "vivo";
+    let votosAlSalirDeVotos = null;
+
+    function irA(vista) {
+      vistaActual = vista;
+      sessionStorage.setItem("karaoke_vista", vista);
+      document.querySelectorAll(".vista").forEach((v) => v.classList.toggle("activa", v.dataset.vista === vista));
+      document.querySelectorAll(".nav button").forEach((b) => b.classList.toggle("activo", b.dataset.ir === vista));
+      $("fab").classList.toggle("oculto", vista !== "lista");
+      if (vista === "votos") votosAlSalirDeVotos = null;
+      actualizarGlobo();
+      window.scrollTo({ top: 0 });
+    }
+
+    document.addEventListener("click", (e) => {
+      const destino = e.target.closest("[data-ir]");
+      if (!destino) return;
+      if (vistaActual === "votos" && destino.dataset.ir !== "votos") votosAlSalirDeVotos = listaVotos.length;
+      irA(destino.dataset.ir);
+    });
+
+    // El globito de la pestaña Votos cuenta los votos que llegaron mientras mirabas otra cosa.
+    function actualizarGlobo() {
+      const globo = $("globoVotos");
+      const nuevos = votosAlSalirDeVotos === null ? 0 : listaVotos.length - votosAlSalirDeVotos;
+      globo.classList.toggle("oculto", vistaActual === "votos" || nuevos <= 0);
+      globo.textContent = nuevos > 99 ? "99+" : nuevos;
+    }
+
+    // ---------- Hojas ----------
+    function abrirHoja(hoja) {
+      hoja.classList.remove("oculto");
+      document.body.style.overflow = "hidden";
+    }
+    function cerrarHoja(hoja) {
+      hoja.classList.add("oculto");
+      if (document.querySelectorAll(".hoja-fondo:not(.oculto)").length === 0) document.body.style.overflow = "";
+    }
+    document.querySelectorAll(".hoja-fondo").forEach((fondo) => {
+      fondo.addEventListener("click", (e) => {
+        if (e.target === fondo || e.target.closest("[data-cerrar]")) cerrarHoja(fondo);
+      });
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      const abierta = [...document.querySelectorAll(".hoja-fondo:not(.oculto)")].pop();
+      if (abierta) cerrarHoja(abierta);
+    });
+
+    // Reemplazo de confirm(): misma pregunta, con el estilo de la app.
+    let resolverConfirmacion = null;
+    function confirmar({ icono, titulo, texto, si, peligro = false }) {
+      $("confIcono").textContent = icono;
+      $("confTitulo").textContent = titulo;
+      $("confTexto").textContent = texto;
+      const botonSi = $("confSi");
+      botonSi.firstElementChild.textContent = si;
+      botonSi.className = "btn " + (peligro ? "btn-rojo" : "btn-primario");
+      abrirHoja($("hojaConfirmar"));
+      botonSi.focus();
+      return new Promise((resolver) => (resolverConfirmacion = resolver));
+    }
+    function responderConfirmacion(valor) {
+      cerrarHoja($("hojaConfirmar"));
+      resolverConfirmacion?.(valor);
+      resolverConfirmacion = null;
+    }
+    $("confSi").addEventListener("click", () => responderConfirmacion(true));
+    $("confNo").addEventListener("click", () => responderConfirmacion(false));
+    $("hojaConfirmar").addEventListener("click", (e) => { if (e.target.id === "hojaConfirmar") responderConfirmacion(false); });
+    new MutationObserver(() => {
+      if ($("hojaConfirmar").classList.contains("oculto") && resolverConfirmacion) responderConfirmacion(false);
+    }).observe($("hojaConfirmar"), { attributes: true, attributeFilter: ["class"] });
+
     // ---------- Acceso ----------
     async function verificar(c) {
       const { data, error } = await conCarga(supabaseClient.rpc("verificar_clave", { p_clave: c }));
@@ -292,13 +658,20 @@
       claveInput.focus();
     }
 
+    function mostrarConexion(estado) {
+      const conectado = estado === "SUBSCRIBED";
+      $("vivoPunto").classList.toggle("apagado", !conectado);
+      $("vivoTexto").textContent = conectado ? "En vivo" : "Reconectando";
+    }
+
     function mostrarPanel() {
       pantallaClave.classList.add("oculto");
       pantallaAdmin.classList.remove("oculto");
+      irA(vistaActual);
       cargar();
       if (!suscrito) {
         suscrito = true;
-        suscribirCambios("participantes-admin", cargar);
+        suscribirCambios("participantes-admin", cargar, mostrarConexion, ["participantes", "evento"]);
         // Los votos no viajan por Realtime (la tabla es privada): se consultan cada 5 s.
         setInterval(() => {
           if (clave && document.visibilityState === "visible" && !pantallaAdmin.classList.contains("oculto")) {
@@ -307,6 +680,13 @@
         }, 5000);
       }
     }
+
+    $("verClave").addEventListener("click", () => {
+      const visible = claveInput.type === "text";
+      claveInput.type = visible ? "password" : "text";
+      $("verClave").textContent = visible ? "👁" : "🙈";
+      $("verClave").setAttribute("aria-label", visible ? "Mostrar clave" : "Ocultar clave");
+    });
 
     formClave.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -335,22 +715,14 @@
       });
     });
 
-    $("btnSalir").addEventListener("click", () => {
+    $("btnSalir").addEventListener("click", async () => {
+      const ok = await confirmar({ icono: "👋", titulo: "¿Cerrar sesión?", texto: "Para volver a entrar vas a necesitar la clave.", si: "Salir" });
+      if (!ok) return;
       sessionStorage.removeItem("karaoke_clave");
       clave = "";
       claveInput.value = "";
       mostrarLogin();
     });
-
-    // Con la clave guardada se entra directo al panel (con skeleton) mientras se verifica.
-    if (clave) {
-      pantallaAdmin.classList.remove("oculto");
-      verificar(clave)
-        .then((ok) => (ok ? mostrarPanel() : mostrarLogin("La clave cambió. Ingresala de nuevo.")))
-        .catch(() => mostrarLogin("Sin conexión con el servidor."));
-    } else {
-      mostrarLogin();
-    }
 
     // ---------- Escritura ----------
     async function llamar(funcion, params) {
@@ -370,40 +742,41 @@
       return "No se pudo guardar: " + error.message;
     }
 
-    // ---------- Formulario ----------
+    async function accionSobre(tarjeta, boton, trabajo) {
+      tarjeta?.classList.add("ocupado");
+      try {
+        await conBoton(boton, trabajo);
+        await cargar();
+      } catch (error) {
+        toast(mensajeDeError(error), "error");
+      } finally {
+        tarjeta?.classList.remove("ocupado");
+      }
+    }
+
+    // ---------- Formulario (hoja) ----------
+    const hojaForm = $("hojaForm");
     const form = $("formParticipante");
     const idEditando = $("idEditando");
     const nombreInput = $("nombreInput");
     const cancionInput = $("cancionInput");
     const ordenInput = $("ordenInput");
     const btnGuardar = $("btnGuardar");
-    const btnCancelar = $("btnCancelarEdicion");
-    const tituloForm = $("tituloForm");
 
-    function salirDeEdicion() {
-      idEditando.value = "";
+    function abrirFormulario(p = null) {
       form.reset();
-      btnGuardar.firstElementChild.textContent = "Agregar participante";
-      tituloForm.textContent = "Agregar participante";
-      btnCancelar.classList.add("oculto");
-      document.querySelectorAll(".participante.editando").forEach((el) => el.classList.remove("editando"));
+      idEditando.value = p?.id ?? "";
+      nombreInput.value = p?.nombre ?? "";
+      cancionInput.value = p?.cancion ?? "";
+      ordenInput.value = p?.orden ?? "";
+      $("tituloForm").textContent = p ? "Editar participante" : "Nuevo participante";
+      $("subForm").textContent = p ? "Los votos que ya tiene se mantienen." : "Se suma al final de la lista de espera.";
+      btnGuardar.firstElementChild.textContent = p ? "Guardar cambios" : "Agregar";
+      abrirHoja(hojaForm);
+      setTimeout(() => nombreInput.focus(), 120);
     }
 
-    function entrarEnEdicion(p) {
-      idEditando.value = p.id;
-      nombreInput.value = p.nombre;
-      cancionInput.value = p.cancion;
-      ordenInput.value = p.orden ?? "";
-      btnGuardar.firstElementChild.textContent = "Guardar cambios";
-      tituloForm.textContent = `Editando a ${p.nombre}`;
-      btnCancelar.classList.remove("oculto");
-      document.querySelectorAll(".participante.editando").forEach((el) => el.classList.remove("editando"));
-      document.querySelector(`[data-id="${p.id}"]`)?.classList.add("editando");
-      tituloForm.scrollIntoView({ behavior: "smooth", block: "start" });
-      nombreInput.focus({ preventScroll: true });
-    }
-
-    btnCancelar.addEventListener("click", salirDeEdicion);
+    $("fab").addEventListener("click", () => abrirFormulario());
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -419,13 +792,12 @@
         try {
           if (editando) {
             await llamar("editar_participante", { p_id: editando, ...params });
-            toast(`Guardado: ${params.p_nombre}`);
+            toast(`✏️ Cambios guardados: ${params.p_nombre}`);
           } else {
             await llamar("agregar_participante", params);
-            toast(`Agregado: ${params.p_nombre} 🎶`);
+            toast(`➕ Agregado: ${params.p_nombre} 🎶`);
           }
-          salirDeEdicion();
-          nombreInput.focus();
+          cerrarHoja(hojaForm);
           await cargar();
         } catch (error) {
           toast(mensajeDeError(error), "error");
@@ -433,19 +805,7 @@
       });
     });
 
-    // ---------- Acciones sobre la lista ----------
-    async function accionSobre(tarjeta, boton, trabajo) {
-      tarjeta?.classList.add("ocupado");
-      try {
-        await conBoton(boton, trabajo);
-        await cargar();
-      } catch (error) {
-        toast(mensajeDeError(error), "error");
-      } finally {
-        tarjeta?.classList.remove("ocupado");
-      }
-    }
-
+    // ---------- Acciones de la lista ----------
     $("lista").addEventListener("click", async (e) => {
       const boton = e.target.closest("[data-accion]");
       if (!boton) return;
@@ -455,18 +815,34 @@
 
       switch (boton.dataset.accion) {
         case "editar":
-          return entrarEnEdicion(p);
-        case "borrar":
-          if (!confirm(`¿Borrar a ${p.nombre} (${p.cancion})?`)) return;
+          return abrirFormulario(p);
+        case "borrar": {
+          const n = votos.get(p.id) ?? 0;
+          const ok = await confirmar({
+            icono: "🗑",
+            titulo: `¿Borrar a ${p.nombre}?`,
+            texto: n ? `Tiene ${n} ${n === 1 ? "voto, que también se borra" : "votos, que también se borran"}. No se puede deshacer.` : "Sale de la lista y de la pantalla pública. No se puede deshacer.",
+            si: "Sí, borrar",
+            peligro: true,
+          });
+          if (!ok) return;
           return accionSobre(tarjeta, boton, async () => {
             await llamar("borrar_participante", { p_id: p.id });
-            if (idEditando.value === p.id) salirDeEdicion();
-            toast(`Borrado: ${p.nombre}`);
+            toast(`🗑 Borrado: ${p.nombre}`, "borrado");
           });
-        default:
-          return accionSobre(tarjeta, boton, () =>
-            llamar("cambiar_estado", { p_id: p.id, p_estado: boton.dataset.accion })
-          );
+        }
+        default: {
+          const estado = boton.dataset.accion;
+          const aviso = {
+            cantando: `🎤 Ahora canta ${p.nombre}`,
+            listo: `✓ ${p.nombre} terminó su turno`,
+            pendiente: `↺ ${p.nombre} volvió a la lista de espera`,
+          }[estado];
+          return accionSobre(tarjeta, boton, async () => {
+            await llamar("cambiar_estado", { p_id: p.id, p_estado: estado });
+            toast(aviso, "turno");
+          });
+        }
       }
     });
 
@@ -478,44 +854,73 @@
       await accionSobre(null, boton, async () => {
         if (siguiente) {
           await llamar("cambiar_estado", { p_id: siguiente.id, p_estado: "cantando" });
-          toast(`🎤 Ahora canta ${siguiente.nombre}`);
+          toast(`🎤 Ahora canta ${siguiente.nombre}`, "turno");
         } else if (ahora) {
           await llamar("cambiar_estado", { p_id: ahora.id, p_estado: "listo" });
-          toast("🎉 ¡Terminó la competencia!");
+          toast("🎉 Cantaron todos. Pasá a la pestaña Final para revelar.", "turno");
         }
       });
     });
 
-    // ---------- Dibujo ----------
-    function escenaHtml({ ahora, pendientes }) {
+    // ---------- Dibujo: En vivo ----------
+    function fijarStat(id, html) {
+      const el = $(id);
+      if (el.innerHTML === html) return;
+      const habiaValor = el.textContent !== "–";
+      el.innerHTML = html;
+      if (habiaValor) {
+        el.classList.remove("pop");
+        void el.offsetWidth;
+        el.classList.add("pop");
+      }
+    }
+
+    function renderEnVivo({ ahora, pendientes, listos, total }) {
+      fijarStat("statParticipantes", String(total));
+      fijarStat("statCantaron", `${listos.length}<small>/${total}</small>`);
+
       const siguiente = pendientes[0];
+      const escena = $("escena");
+      escena.classList.toggle("quieta", !ahora);
       let cuerpo;
       if (ahora) {
-        cuerpo = `
-          <div class="nombre">${escapeHtml(ahora.nombre)}</div>
-          <div class="cancion">🎵 ${escapeHtml(ahora.cancion)}</div>`;
+        cuerpo = `<div class="nombre">${escapeHtml(ahora.nombre)}</div><div class="cancion">🎵 ${escapeHtml(ahora.cancion)}</div>`;
       } else if (siguiente) {
         cuerpo = `<div class="vacia">Nadie en el escenario todavía.</div>`;
+      } else if (total) {
+        cuerpo = `<div class="vacia">🎉 Cantaron todos. Andá a <b>Final</b> para revelar.</div>`;
       } else {
-        cuerpo = `<div class="vacia">No hay nadie en espera.</div>`;
+        cuerpo = `<div class="vacia">Todavía no hay participantes.</div>`;
       }
-
       let boton = "";
       if (siguiente) {
         const verbo = ahora ? "Siguiente" : "Empezar con";
         boton = `<button class="btn btn-primario" id="btnSiguiente" type="button"><span>${verbo}: ${escapeHtml(siguiente.nombre)} ▶</span></button>`;
       } else if (ahora) {
         boton = `<button class="btn btn-secundario" id="btnSiguiente" type="button"><span>✓ Terminar turno <small>(era el último)</small></span></button>`;
+      } else if (!total) {
+        boton = `<button class="btn btn-secundario" data-ir="lista" type="button"><span>👥 Agregar participantes</span></button>`;
       }
-
-      return `
+      escena.innerHTML = `
         <div class="escena-top">
-          <span class="badge badge-cantando"><span class="punto-vivo ${ahora ? "" : "apagado"}"></span>En escena</span>
+          <span class="badge badge-cantando"><span class="punto-vivo ${ahora ? "" : "apagado"}"></span>${ahora ? "Cantando ahora" : "Escenario"}</span>
           ${ahora ? '<span class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>' : ""}
         </div>
         ${cuerpo}
         ${boton}`;
+
+      const cola = pendientes.slice(0, 3);
+      $("proximos").innerHTML = cola.length
+        ? cola.map((p) => `
+            <div class="proximo">
+              <div class="num">${p.pos}</div>
+              <div class="datos"><div class="nombre">${escapeHtml(p.nombre)}</div><div class="cancion">${escapeHtml(p.cancion)}</div></div>
+            </div>`).join("") + (pendientes.length > 3 ? `<div class="vacio-suave">y ${pendientes.length - 3} más en espera</div>` : "")
+        : `<div class="vacio-suave">No queda nadie en espera.</div>`;
     }
+
+    // ---------- Dibujo: Participantes ----------
+    let filtroLista = "todos";
 
     function accionEstado(p) {
       if (p.estado === "pendiente") return `<button class="btn btn-secundario btn-chico" data-accion="cantando" type="button"><span>▶ Cantar</span></button>`;
@@ -525,65 +930,91 @@
 
     function tarjetaHtml(p, i) {
       return `
-        <article class="participante es-${p.estado} ${idEditando.value === p.id ? "editando" : ""} ${animador.clase(p)}" data-id="${p.id}" style="--i:${i}">
+        <article class="participante es-${p.estado} ${animador.clase(p)}" data-id="${p.id}" style="--i:${i}">
           <div class="cabeza">
             <div class="num">${p.pos}</div>
             <div class="datos">
               <div class="nombre">${escapeHtml(p.nombre)}</div>
               <div class="cancion">${escapeHtml(p.cancion)}</div>
             </div>
-            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px">
+            <div class="meta">
               <span class="badge badge-${p.estado}">${ETIQUETA_ESTADO[p.estado]}</span>
               <span class="chip-votos">❤ ${votos.get(p.id) ?? 0}</span>
             </div>
           </div>
           <div class="acciones">
             ${accionEstado(p)}
-            <button class="btn btn-secundario btn-chico" data-accion="editar" type="button"><span>Editar</span></button>
-            <button class="btn btn-peligro btn-chico btn-icono" data-accion="borrar" type="button" aria-label="Borrar a ${escapeHtml(p.nombre)}"><span>🗑</span></button>
+            <button class="icono-btn" data-accion="editar" type="button" aria-label="Editar a ${escapeHtml(p.nombre)}" title="Editar">✏️</button>
+            <button class="icono-btn peligro" data-accion="borrar" type="button" aria-label="Borrar a ${escapeHtml(p.nombre)}" title="Borrar">🗑</button>
           </div>
         </article>`;
     }
 
-    function render(lista) {
-      participantes = lista;
-      const grupos = clasificar(lista);
-      const ordenados = [...(grupos.ahora ? [grupos.ahora] : []), ...grupos.pendientes, ...grupos.listos];
+    function renderLista({ ahora, pendientes, listos, total }) {
+      const ordenados = [...(ahora ? [ahora] : []), ...pendientes, ...listos];
+      const grupos = {
+        todos: ordenados,
+        espera: [...(ahora ? [ahora] : []), ...pendientes],
+        listos,
+      };
+      $("cuenta").textContent = total === 1 ? "1 en total" : `${total} en total`;
+      $("filtros").innerHTML = [
+        ["todos", "Todos"],
+        ["espera", "Por cantar"],
+        ["listos", "Ya cantaron"],
+      ].map(([id, texto]) => `<button class="chip ${filtroLista === id ? "activo" : ""}" data-filtro="${id}" type="button" role="tab" aria-selected="${filtroLista === id}">${texto}<b>${grupos[id].length}</b></button>`).join("");
 
-      $("escena").innerHTML = escenaHtml(grupos);
-      $("cuenta").textContent = `${grupos.listos.length}/${grupos.total} cantaron`;
-      $("lista").innerHTML = ordenados.length
-        ? ordenados.map(tarjetaHtml).join("")
-        : `<div class="vacia-lista entra">Todavía no hay participantes.<br>Agregá el primero arriba 👆</div>`;
+      const visibles = grupos[filtroLista];
+      $("lista").innerHTML = visibles.length
+        ? visibles.map(tarjetaHtml).join("")
+        : total
+          ? `<div class="vacia-lista entra"><div class="grande">🎈</div>Nadie en este grupo.</div>`
+          : `<div class="vacia-lista entra"><div class="grande">🎤</div>Todavía no hay participantes.<br>Tocá <b>+</b> para agregar el primero.</div>`;
       animador.recordar(ordenados);
     }
 
+    $("filtros").addEventListener("click", (e) => {
+      const chip = e.target.closest("[data-filtro]");
+      if (!chip) return;
+      filtroLista = chip.dataset.filtro;
+      render(participantes);
+    });
+
+    function render(lista) {
+      participantes = lista;
+      const grupos = clasificar(lista);
+      renderEnVivo(grupos);
+      renderLista(grupos);
+    }
+
+    // ---------- Dibujo: Votos ----------
     function renderResultados() {
-      const total = [...votos.values()].reduce((a, b) => a + b, 0);
+      const total = listaVotos.length;
+      fijarStat("statVotos", String(total));
       $("totalVotos").textContent = total === 1 ? "1 voto" : `${total} votos`;
+      actualizarGlobo();
       const contenedor = $("resultados");
-      if (!total) {
-        contenedor.innerHTML = `<div class="vacia" style="text-align: center; color: var(--muted)">Todavía nadie votó. Compartí el QR 📱</div>`;
-        return;
-      }
       const ranking = participantes
         .map((p) => ({ ...p, n: votos.get(p.id) ?? 0 }))
         .filter((p) => p.n > 0)
         .sort((a, b) => b.n - a.n);
-      if (!ranking.length) return;
+      if (!ranking.length) {
+        contenedor.innerHTML = `<div class="vacia"><div style="font-size: 2rem">📱</div>Todavía nadie votó.<br>Compartí el QR para que voten.</div>`;
+        return;
+      }
       const max = ranking[0].n;
       const medallas = ["🥇", "🥈", "🥉"];
       contenedor.innerHTML = `
         <div class="ranking">
           ${ranking.map((p, i) => `
-            <div class="puesto">
-              <span class="medalla ${i < 3 ? "top" : ""}">${medallas[i] ?? i + 1}</span>
+            <div class="fila-rank">
+              <span class="medalla ${i < 3 ? "podio" : ""}">${medallas[i] ?? i + 1}</span>
               <span class="quien">${escapeHtml(p.nombre)}</span>
               <span class="cuantos">${p.n}</span>
               <div class="barra"><div data-id="${p.id}" style="width: ${anchosAnteriores.get(p.id) ?? 0}%"></div></div>
             </div>`).join("")}
         </div>
-        <div class="resultados-pie"><span>Solo vos ves estos números</span><span>Actualizado ${new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span></div>`;
+        <div class="pie"><span>🔒 Solo vos ves estos números</span><span>${new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span></div>`;
       const nuevos = new Map(ranking.map((p) => [p.id, Math.round((p.n / max) * 100)]));
       requestAnimationFrame(() => requestAnimationFrame(() => {
         contenedor.querySelectorAll(".barra > div").forEach((el) => (el.style.width = nuevos.get(el.dataset.id) + "%"));
@@ -591,7 +1022,6 @@
       anchosAnteriores = nuevos;
     }
 
-    // ---------- Quién votó ----------
     const LIMITE_VOTANTES = 15;
     let listaVotos = [];
     let votosVistos = null;
@@ -671,16 +1101,107 @@
       }
     }
 
-    async function cargar() {
-      const { data, error } = await traerParticipantes();
-      if (error) {
-        toast("No se pudo cargar la lista: " + error.message, "error");
+    // ---------- Dibujo: Final ----------
+    let revelacion = null;
+
+    function renderRevelar() {
+      if (!revelacion) return;
+      const { votacion_abierta, revelados, total, puestos } = revelacion;
+      const caja = $("revelar");
+      $("estadoFinal").textContent = votacion_abierta ? "Votación abierta" : `${revelados} de ${total} revelados`;
+
+      if (votacion_abierta) {
+        caja.innerHTML = `
+          <div class="grande">🗳️</div>
+          <h3>La votación está abierta</h3>
+          <p>Cuando terminen todos de cantar, cerrala. Ahí se <strong>congela el ranking</strong> y revelás los puestos uno por uno, del último al ganador, en todos los celulares a la vez.</p>
+          <button class="btn btn-primario" data-revelar="cerrar" type="button" ${participantes.length ? "" : "disabled"}><span>🔒 Cerrar votación</span></button>`;
         return;
       }
-      render(data);
+
+      const proximo = total - revelados;
+      const pct = total ? Math.round((revelados / total) * 100) : 0;
+      const ya = [...puestos].map((p) => `
+        <li class="${p.puesto === 1 ? "p1" : ""}"><span class="m">${{ 1: "🥇", 2: "🥈", 3: "🥉" }[p.puesto] ?? p.puesto + "°"}</span><span class="n">${escapeHtml(p.nombre)}</span><span class="v">${p.votos} ${p.votos === 1 ? "voto" : "votos"}</span></li>`).join("");
+
+      let titulo, texto, principal;
+      if (proximo > 0) {
+        titulo = revelados ? "Seguí revelando" : "¡Listo para revelar!";
+        texto = proximo === 1 ? "Solo falta el <strong>ganador</strong>. 🥁" : `Cada toque muestra un puesto más. Faltan <strong>${proximo}</strong>.`;
+        principal = `<button class="btn btn-primario" data-revelar="siguiente" type="button"><span>${proximo === 1 ? "🏆 Revelar al GANADOR" : "✨ Revelar el siguiente"}</span></button>`;
+      } else {
+        const ganadores = puestos.filter((p) => p.puesto === 1).map((p) => escapeHtml(p.nombre)).join(" y ");
+        titulo = `¡Ganó ${ganadores}!`;
+        texto = "Ya se reveló todo en la pantalla pública. 🎉";
+        principal = "";
+      }
+      caja.innerHTML = `
+        <div class="anillo" style="--p:${pct}"><div>${revelados}<small>de ${total}</small></div></div>
+        <h3>${titulo}</h3>
+        <p>${texto}</p>
+        ${principal}
+        <button class="btn btn-secundario" data-revelar="reabrir" type="button"><span>↺ Reabrir votación</span></button>
+        ${ya ? `<ul class="ya">${ya}</ul>` : ""}`;
+    }
+
+    $("revelar").addEventListener("click", async (e) => {
+      const boton = e.target.closest("[data-revelar]");
+      if (!boton) return;
+      const accion = boton.dataset.revelar;
+      if (accion === "cerrar") {
+        const ok = await confirmar({ icono: "🔒", titulo: "¿Cerrar la votación?", texto: "Nadie más va a poder votar y se congela el ranking para revelarlo.", si: "Cerrar votación" });
+        if (!ok) return;
+      }
+      if (accion === "reabrir") {
+        const ok = await confirmar({ icono: "↺", titulo: "¿Reabrir la votación?", texto: "Se oculta lo revelado y el público puede volver a votar.", si: "Reabrir", peligro: true });
+        if (!ok) return;
+      }
+      await accionSobre(null, boton, async () => {
+        if (accion === "cerrar") {
+          await llamar("cerrar_votacion", {});
+          toast("🔒 Votación cerrada. ¡A revelar!", "revelar");
+        } else if (accion === "siguiente") {
+          const n = await llamar("revelar_siguiente", {});
+          if (n === revelacion.total) {
+            toast("🏆 ¡Ganador revelado!", "revelar");
+            lluviaDeConfeti(["🏆", "🎉", "✨", "⭐", "🥇"], 30);
+          } else {
+            toast(`✨ Revelados ${n} de ${revelacion.total}`, "revelar");
+          }
+        } else {
+          await llamar("reabrir_votacion", {});
+          toast("↺ Votación abierta de nuevo", "revelar");
+        }
+      });
+    });
+
+    // ---------- Carga ----------
+    async function cargar() {
+      const [lista, rev] = await Promise.all([traerParticipantes(), traerRevelacion()]);
+      if (lista.error) {
+        toast("No se pudo cargar la lista: " + lista.error.message, "error");
+        return;
+      }
+      render(lista.data);
+      if (!rev.error) {
+        revelacion = rev.data;
+        renderRevelar();
+      }
       // Un participante renombrado tiene que verse con su nombre nuevo en la lista de votos.
       if (votosVistos) renderVotantes();
       cargarResultados();
+    }
+
+    // ---------- Arranque ----------
+    // Con la clave guardada se entra directo al panel (con skeleton) mientras se verifica.
+    if (clave) {
+      pantallaAdmin.classList.remove("oculto");
+      irA(vistaActual);
+      verificar(clave)
+        .then((ok) => (ok ? mostrarPanel() : mostrarLogin("La clave cambió. Ingresala de nuevo.")))
+        .catch(() => mostrarLogin("Sin conexión con el servidor."));
+    } else {
+      mostrarLogin();
     }
   </script>
 </body>

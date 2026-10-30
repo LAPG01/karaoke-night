@@ -4,8 +4,10 @@ Página para una competencia de karaoke, pensada para celular y para compartir p
 
 - `index.html` — lo que abre el público: pide el nombre, muestra quién canta,
   quién sigue y la lista, en vivo. Cada persona tiene **un voto** (uno por celular).
-- `admin.html` — panel con clave: agregar/editar/borrar participantes, pasar al
-  siguiente turno y ver el ranking de votos (solo el admin ve los números).
+- `admin.html` — panel con clave, en cuatro pestañas: **En vivo** (pasar de turno),
+  **Participantes** (agregar/editar/borrar), **Votos** (ranking y quién votó a quién,
+  solo lo ve el admin) y **Final** (cerrar la votación y revelar los puestos uno por
+  uno, del último al ganador, en todos los celulares a la vez).
 
 Hecha con HTML/CSS/JS sin build, Supabase (base de datos + tiempo real) y GitHub Pages.
 

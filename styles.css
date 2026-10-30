@@ -162,6 +162,11 @@ h2.seccion .cuenta {
   color: #ff9a9a;
   --spin: #ff9a9a;
 }
+.btn-rojo {
+  background: linear-gradient(90deg, #ff4d6d, #ff7a59);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(255, 77, 109, 0.3);
+}
 .btn-chico { min-height: 40px; padding: 0 14px; font-size: 0.88rem; border-radius: 10px; }
 .btn-ancho { width: 100%; }
 
@@ -269,10 +274,73 @@ h2.seccion .cuenta {
   font-size: 0.92rem;
   animation: toastEntra 0.3s var(--ease);
 }
-.toast.error { border-left-color: var(--danger); }
+.toast.error { border-left-color: var(--danger); background: #2e1424; }
+.toast.borrado { border-left-color: var(--danger); }
+.toast.turno { border-left-color: #b57bff; }
+.toast.revelar { border-left-color: var(--accent2); }
+
+.confeti {
+  position: fixed;
+  bottom: -40px;
+  z-index: 70;
+  font-size: 1.8rem;
+  pointer-events: none;
+  animation: flotar 2s ease-out forwards;
+}
+@keyframes flotar {
+  to { transform: translate(var(--dx), -90vh) rotate(var(--rot)); opacity: 0; }
+}
 .toast.saliendo { animation: toastSale 0.25s ease-in forwards; }
 @keyframes toastEntra { from { opacity: 0; transform: translateY(16px); } }
 @keyframes toastSale { to { opacity: 0; transform: translateY(16px); } }
+
+/* ---------- Campos de texto ---------- */
+.campo {
+  width: 100%;
+  min-height: 52px;
+  margin-bottom: 12px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(10, 5, 20, 0.6);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.05rem; /* >= 16px: evita el zoom automático de iOS */
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.campo:focus { outline: none; border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(255, 210, 63, 0.18); }
+.campo::placeholder { color: var(--dim); }
+
+/* ---------- Hojas que suben desde abajo ---------- */
+.hoja-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: fundido 0.2s;
+}
+.hoja {
+  width: min(100%, 520px);
+  max-height: 92dvh;
+  overflow-y: auto;
+  padding: 12px 20px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 26px 26px 0 0;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  background: var(--card-2);
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
+  animation: subir 0.34s var(--ease);
+}
+.hoja-asa { width: 40px; height: 4px; margin: 0 auto 16px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); }
+.hoja-botones { display: flex; gap: 10px; margin-top: 18px; }
+.hoja-botones .btn { flex: 1; min-height: 52px; }
+@keyframes subir { from { transform: translateY(100%); } }
+@keyframes fundido { from { opacity: 0; } }
 
 /* ---------- Errores ---------- */
 .aviso-error {

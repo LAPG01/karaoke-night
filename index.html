@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
 <style>
-  .top {
+  .cabecera {
     position: sticky;
     top: 0;
     z-index: 10;
@@ -265,69 +265,78 @@
   .portada-card h2 { margin: 0; font-size: 1.6rem; font-weight: 800; }
   .portada-card p { margin: 8px 0 20px; color: var(--muted); }
   .portada-card .nota { margin: 14px 0 0; font-size: 0.82rem; }
-  .campo {
-    width: 100%;
-    min-height: 52px;
-    margin-bottom: 12px;
-    padding: 0 16px;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: #120a20;
-    color: var(--text);
-    font: inherit;
-    font-size: 1.05rem;
-    text-align: center;
-  }
-  .campo:focus { outline: none; border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(255, 210, 63, 0.18); }
-  .campo::placeholder { color: var(--dim); }
+  .portada-card .campo { text-align: center; }
 
-  /* Hoja de confirmación */
-  .hoja-fondo {
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.55);
-    animation: fundido 0.2s;
-  }
-  .hoja {
-    width: min(100%, 520px);
-    padding: 12px 20px calc(20px + env(safe-area-inset-bottom));
-    border-radius: 24px 24px 0 0;
-    background: var(--card-2);
-    text-align: center;
-    animation: subir 0.32s var(--ease);
-  }
-  .hoja-asa { width: 40px; height: 4px; margin: 0 auto 16px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); }
+  /* Hoja de confirmación del voto */
+  .hoja { text-align: center; }
   .hoja .pre { margin: 0; font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
   .hoja h3 { margin: 6px 0 2px; font-size: 1.6rem; font-weight: 800; overflow-wrap: anywhere; }
   .hoja .cancion { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
   .hoja .nota { margin: 16px 0 0; font-size: 0.85rem; color: var(--accent2); }
-  .hoja-botones { display: flex; gap: 10px; margin-top: 18px; }
-  .hoja-botones .btn { flex: 1; min-height: 52px; }
-  @keyframes subir { from { transform: translateY(100%); } }
-  @keyframes fundido { from { opacity: 0; } }
 
-  /* Corazones al votar */
-  .corazon {
-    position: fixed;
-    bottom: -40px;
-    z-index: 70;
-    font-size: 1.8rem;
-    pointer-events: none;
-    animation: flotar 1.8s ease-out forwards;
+  /* Resultados */
+  .res-cabeza { text-align: center; margin: 8px 0 20px; }
+  .res-cabeza .trofeo { font-size: 3rem; line-height: 1; animation: rebote 2.2s ease-in-out infinite; }
+  @keyframes rebote { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-8px) rotate(4deg); } }
+  .res-cabeza h2 { margin: 10px 0 4px; font-size: clamp(1.6rem, 7vw, 2.2rem); font-weight: 800; }
+  .res-cabeza p { margin: 0; color: var(--muted); }
+  .puestos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; perspective: 900px; }
+  .puesto {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    background: var(--card);
+    border: 1px solid var(--line);
   }
-  @keyframes flotar {
-    to { transform: translate(var(--dx), -85vh) rotate(var(--rot)); opacity: 0; }
+  .puesto .medalla {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--muted);
+  }
+  .puesto .datos { flex: 1; min-width: 0; }
+  .puesto .nombre { font-weight: 700; font-size: 1.05rem; overflow-wrap: anywhere; }
+  .puesto .cancion { color: var(--muted); font-size: 0.85rem; overflow-wrap: anywhere; }
+  .puesto .empate { margin-left: 6px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+  .puesto .cuantos { flex: 0 0 auto; text-align: right; font-weight: 800; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+  .puesto .cuantos small { display: block; font-size: 0.68rem; font-weight: 600; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+  .puesto.podio .medalla { font-size: 1.6rem; background: rgba(255, 210, 63, 0.12); }
+  .puesto.p1 {
+    padding: 20px 18px;
+    border: 2px solid transparent;
+    background:
+      linear-gradient(160deg, #3a2410, var(--card) 75%) padding-box,
+      linear-gradient(120deg, var(--accent2), #fff3b0, var(--accent2), var(--accent)) border-box;
+    background-size: 100% 100%, 300% 300%;
+    box-shadow: 0 0 50px rgba(255, 210, 63, 0.3);
+    animation: borde 5s linear infinite;
+  }
+  .puesto.p1 .nombre { font-size: clamp(1.4rem, 6vw, 1.9rem); font-weight: 800; color: var(--accent2); }
+  .puesto.p1 .medalla { width: 56px; height: 56px; font-size: 2.2rem; }
+  .puesto.misterio { justify-content: center; border-style: dashed; background: transparent; color: var(--dim); font-weight: 800; letter-spacing: 0.3em; min-height: 74px; }
+  .puesto.siguiente { border-color: rgba(255, 210, 63, 0.5); color: var(--accent2); animation: latir 1.4s ease-in-out infinite; }
+  @keyframes latir { 50% { box-shadow: 0 0 22px rgba(255, 210, 63, 0.35); } }
+  .puesto.revela { animation: revela 0.9s var(--ease) both; transform-origin: top center; }
+  .puesto.p1.revela { animation: revela 1.1s var(--ease) both, borde 5s linear infinite; }
+  @keyframes revela {
+    0% { opacity: 0; transform: rotateX(-90deg) scale(0.9); }
+    60% { opacity: 1; transform: rotateX(12deg) scale(1.03); }
+    100% { transform: none; }
   }
 </style>
 </head>
 <body>
   <div class="barra-carga" id="barraCarga"></div>
 
-  <header class="top">
+  <header class="cabecera">
     <div class="marca">
       <div class="logo" aria-hidden="true">🎤</div>
       <div>
@@ -416,7 +425,7 @@
       if (error) return;
       miVoto = data;
       votoCargado = true;
-      if (listaCargada) render(ultimaLista);
+      if (listaCargada && revelacion.votacion_abierta) render(ultimaLista);
     }
 
     function votoHtml(p) {
@@ -546,14 +555,82 @@
         </div>`;
     }
 
+    // ---------- Resultados (votación cerrada) ----------
+    let revelacion = { votacion_abierta: true, revelados: 0, total: 0, puestos: [] };
+    let reveladosAntes = null;
+    let festejado = false;
+
+    function medalla(puesto) {
+      return { 1: "🥇", 2: "🥈", 3: "🥉" }[puesto] ?? `${puesto}°`;
+    }
+
+    function renderResultados() {
+      const { revelados, total, puestos } = revelacion;
+      const porOrden = new Map(puestos.map((p) => [p.orden, p]));
+      const cuantosPorPuesto = new Map();
+      for (const p of puestos) cuantosPorPuesto.set(p.puesto, (cuantosPorPuesto.get(p.puesto) ?? 0) + 1);
+      const ganadorVisible = total > 0 && revelados === total;
+      const proximo = total - revelados;
+
+      let cabeza;
+      if (ganadorVisible) {
+        const ganadores = puestos.filter((p) => p.puesto === 1).map((p) => escapeHtml(p.nombre));
+        cabeza = `<div class="trofeo">🏆</div><h2>¡${ganadores.join(" y ")}!</h2><p>${ganadores.length > 1 ? "Empate en el primer puesto" : "Ganador de la noche"}</p>`;
+      } else if (revelados === 0) {
+        cabeza = `<div class="trofeo">🥁</div><h2>La votación cerró</h2><p>En un momento se revelan los resultados…</p>`;
+      } else {
+        cabeza = `<div class="trofeo">🎤</div><h2>Resultados</h2><p>Revelados ${revelados} de ${total}</p>`;
+      }
+
+      let filas = "";
+      for (let orden = 1; orden <= total; orden++) {
+        const p = porOrden.get(orden);
+        if (!p) {
+          filas += `<li class="puesto misterio ${orden === proximo ? "siguiente" : ""}">${orden === 1 ? "🏆 ? ? ?" : "? ? ?"}</li>`;
+          continue;
+        }
+        const nuevo = reveladosAntes !== null && orden <= total - reveladosAntes;
+        const empate = (cuantosPorPuesto.get(p.puesto) ?? 0) > 1 ? `<span class="empate">empate</span>` : "";
+        filas += `
+          <li class="puesto ${p.puesto <= 3 ? "podio" : ""} ${p.puesto === 1 ? "p1" : ""} ${nuevo ? "revela" : ""}">
+            <div class="medalla">${medalla(p.puesto)}</div>
+            <div class="datos">
+              <div class="nombre">${escapeHtml(p.nombre)}${empate}</div>
+              <div class="cancion">${escapeHtml(p.cancion)}</div>
+            </div>
+            <div class="cuantos">${p.votos}<small>${p.votos === 1 ? "voto" : "votos"}</small></div>
+          </li>`;
+      }
+
+      contenido.innerHTML = `
+        <section class="res-cabeza ${reveladosAntes === null || ganadorVisible !== festejado ? "entra" : ""}">${cabeza}</section>
+        ${total ? `<ol class="puestos">${filas}</ol>` : `<div class="hero vacio"><div class="detalle">No hubo participantes.</div></div>`}`;
+      contenido.setAttribute("aria-busy", "false");
+
+      if (reveladosAntes !== null && revelados > reveladosAntes) {
+        if (ganadorVisible && !festejado) {
+          lluviaDeConfeti(["🏆", "🎉", "✨", "⭐", "🥇"], 40);
+        } else {
+          navigator.vibrate?.(60);
+        }
+      }
+      festejado = ganadorVisible;
+      reveladosAntes = revelados;
+    }
+
     async function cargar() {
-      const { data, error } = await traerParticipantes();
+      const [lista, rev] = await Promise.all([traerParticipantes(), traerRevelacion()]);
+      const error = lista.error || rev.error;
       if (error) return renderError(error.message);
-      ultimaLista = data;
+      ultimaLista = lista.data;
       listaCargada = true;
-      render(data);
+      revelacion = rev.data;
+      if (!revelacion.votacion_abierta) return renderResultados();
+      reveladosAntes = null;
+      festejado = false;
+      render(lista.data);
       // Si borraron a quien votó, su voto se borró con él: se vuelve a consultar.
-      if (miVoto && !data.some((p) => p.id === miVoto)) cargarMiVoto();
+      if (miVoto && !lista.data.some((p) => p.id === miVoto)) cargarMiVoto();
     }
 
     function mostrarConexion(estado) {
@@ -608,22 +685,6 @@
       candidato = null;
     }
 
-    function lluviaDeCorazones() {
-      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      const emojis = ["❤️", "💖", "💕", "🎤", "✨"];
-      for (let i = 0; i < 16; i++) {
-        const c = document.createElement("span");
-        c.className = "corazon";
-        c.textContent = emojis[i % emojis.length];
-        c.style.left = Math.random() * 100 + "vw";
-        c.style.setProperty("--dx", (Math.random() * 80 - 40) + "px");
-        c.style.setProperty("--rot", (Math.random() * 60 - 30) + "deg");
-        c.style.animationDelay = Math.random() * 0.4 + "s";
-        c.addEventListener("animationend", () => c.remove(), { once: true });
-        document.body.append(c);
-      }
-    }
-
     contenido.addEventListener("click", (e) => {
       const boton = e.target.closest("[data-votar]");
       if (!boton) return;
@@ -647,11 +708,12 @@
           const ya = error.message.includes("Ya votaste");
           toast(ya ? "Ya habías votado desde este celular." : "No se pudo votar: " + error.message, "error");
           if (ya) cargarMiVoto();
+          else cargar();
           return;
         }
         miVoto = data;
         render(ultimaLista);
-        lluviaDeCorazones();
+        lluviaDeConfeti(["❤️", "💖", "💕", "🎤", "✨"], 16);
         toast(`¡Voto registrado para ${p.nombre}! ❤`);
       });
     });
@@ -666,7 +728,7 @@
     }
 
     cargar();
-    suscribirCambios("participantes-publico", cargar, mostrarConexion);
+    suscribirCambios("participantes-publico", cargar, mostrarConexion, ["participantes", "evento"]);
   </script>
 </body>
 </html>
