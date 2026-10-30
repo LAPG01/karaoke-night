@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#0e0718" />
+<meta name="theme-color" content="#061430" />
 <meta name="robots" content="noindex" />
-<title>Karaoke Night — Admin</title>
+<title>CEVAZ Karaoke Night — Admin</title>
+<link rel="icon" type="image/png" href="cevaz-logo.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -20,18 +21,6 @@
     border-radius: 20px;
     padding: 18px;
   }
-  .logo-tile {
-    display: grid;
-    place-items: center;
-    flex: 0 0 auto;
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
-    background: var(--grad);
-    font-size: 1.15rem;
-    box-shadow: 0 4px 16px rgba(255, 45, 120, 0.35);
-  }
-
   /* ---------- Login ---------- */
   .login {
     min-height: 100dvh;
@@ -44,12 +33,11 @@
     padding: 30px 22px 22px;
     border-radius: 26px;
     border: 1px solid var(--line);
-    background: linear-gradient(170deg, rgba(42, 21, 72, 0.9), rgba(26, 15, 46, 0.92));
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 45, 120, 0.08);
+    background: linear-gradient(170deg, rgba(var(--hero-rgb), 0.9), rgba(var(--card-rgb), 0.92));
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(var(--rojo-rgb), 0.08);
     text-align: center;
   }
-  .login-card .logo-tile { width: 72px; height: 72px; border-radius: 24px; font-size: 2.1rem; margin: 0 auto 16px; box-shadow: 0 10px 34px rgba(255, 45, 120, 0.45); }
-  .login-card h1 { margin: 0; font-size: 1.7rem; font-weight: 800; }
+  .login-card h1 { margin: 4px 0 0; font-size: 1.7rem; font-weight: 800; }
   .login-card .sub { margin: 6px 0 22px; color: var(--muted); }
   .login-card .campo { text-align: center; }
   .clave-caja { position: relative; }
@@ -81,13 +69,12 @@
     gap: 10px;
     margin: 0 -16px;
     padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
-    background: linear-gradient(to bottom, rgba(14, 7, 24, 0.96) 65%, rgba(14, 7, 24, 0));
+    background: linear-gradient(to bottom, rgba(var(--fondo-rgb), 0.96) 65%, rgba(var(--fondo-rgb), 0));
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
   .marca { display: flex; align-items: center; gap: 10px; min-width: 0; }
-  .marca h1 { margin: 0; font-size: 1.08rem; font-weight: 800; line-height: 1.1; }
-  .marca p { margin: 0; font-size: 0.72rem; color: var(--muted); }
+  .marca h1 { margin: 1px 0 0; font-size: 1.08rem; font-weight: 800; line-height: 1.1; }
   .cabecera .lado { display: flex; align-items: center; gap: 6px; }
   .vivo {
     display: inline-flex;
@@ -145,7 +132,7 @@
     padding: 6px;
     border-radius: 22px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(28, 16, 50, 0.86);
+    background: rgba(var(--card-rgb), 0.88);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
@@ -169,7 +156,7 @@
     transition: background 0.25s, color 0.25s;
   }
   .nav button .ic { font-size: 1.25rem; line-height: 1.2; transition: transform 0.25s var(--ease); }
-  .nav button.activo { background: rgba(255, 45, 120, 0.16); color: var(--text); }
+  .nav button.activo { background: rgba(var(--rojo-rgb), 0.16); color: var(--text); }
   .nav button.activo .ic { transform: translateY(-1px) scale(1.12); }
   .nav .globo {
     position: absolute;
@@ -197,12 +184,12 @@
     height: 58px;
     border: 0;
     border-radius: 20px;
-    background: var(--grad);
-    color: #1a0f2b;
+    background: var(--grad-rojo);
+    color: #fff;
     font-size: 1.9rem;
     font-weight: 500;
     line-height: 1;
-    box-shadow: 0 12px 30px rgba(255, 45, 120, 0.45);
+    box-shadow: 0 12px 30px rgba(var(--rojo-rgb), 0.45);
     cursor: pointer;
     transition: transform 0.15s var(--ease);
     animation: entra 0.35s var(--ease) both;
@@ -231,17 +218,17 @@
     border-radius: 24px;
     border: 2px solid transparent;
     background:
-      linear-gradient(160deg, #2a1548, var(--card) 70%) padding-box,
+      linear-gradient(160deg, var(--hero), var(--card) 70%) padding-box,
       linear-gradient(120deg, var(--accent), var(--accent2), var(--cyan), var(--accent)) border-box;
     background-size: 100% 100%, 300% 300%;
-    box-shadow: 0 0 44px rgba(255, 45, 120, 0.2);
+    box-shadow: 0 0 44px rgba(var(--rojo-rgb), 0.2);
     animation: borde 6s linear infinite;
   }
   .escena.quieta { animation: none; background: var(--card) padding-box, var(--line) border-box; box-shadow: none; }
   @keyframes borde { to { background-position: 0 0, 300% 0; } }
   .escena-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
   .escena .nombre { font-size: clamp(1.6rem, 7vw, 2.1rem); font-weight: 800; line-height: 1.05; overflow-wrap: anywhere; }
-  .escena .cancion { margin-top: 6px; color: #e3d6ff; overflow-wrap: anywhere; }
+  .escena .cancion { margin-top: 6px; color: #d6e2ff; overflow-wrap: anywhere; }
   .escena .vacia { color: var(--muted); font-size: 1.05rem; }
   .escena .btn { position: relative; margin-top: 18px; width: 100%; min-height: 56px; font-size: 1.02rem; }
   .escena .btn small { font-weight: 500; opacity: 0.75; }
@@ -253,7 +240,7 @@
   .proximo { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
   .proximo:first-of-type { border-top: 0; }
   .proximo .num { flex: 0 0 auto; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; background: rgba(255, 255, 255, 0.06); font-size: 0.82rem; font-weight: 700; color: var(--muted); }
-  .proximo:first-of-type .num { background: rgba(255, 210, 63, 0.14); color: var(--accent2); }
+  .proximo:first-of-type .num { background: rgba(var(--oro-rgb), 0.14); color: var(--accent2); }
   .proximo .datos { flex: 1; min-width: 0; }
   .proximo .nombre { font-weight: 600; overflow-wrap: anywhere; }
   .proximo .cancion { color: var(--muted); font-size: 0.82rem; overflow-wrap: anywhere; }
@@ -275,7 +262,7 @@
     cursor: pointer;
     transition: background 0.2s, color 0.2s, border-color 0.2s;
   }
-  .chip.activo { background: var(--text); color: #1a0f2b; border-color: var(--text); }
+  .chip.activo { background: var(--text); color: var(--tinta); border-color: var(--text); }
   .chip b { font-weight: 800; margin-left: 4px; opacity: 0.7; }
 
   .lista { display: flex; flex-direction: column; gap: 10px; }
@@ -286,7 +273,7 @@
     border: 1px solid var(--line);
     transition: opacity 0.2s, border-color 0.2s;
   }
-  .participante.es-cantando { border-color: rgba(255, 45, 120, 0.55); background: linear-gradient(160deg, #2a1446, var(--card)); box-shadow: 0 0 24px rgba(255, 45, 120, 0.12); }
+  .participante.es-cantando { border-color: rgba(var(--rojo-rgb), 0.55); background: linear-gradient(160deg, var(--hero), var(--card)); box-shadow: 0 0 24px rgba(var(--rojo-rgb), 0.12); }
   .participante.es-listo .datos, .participante.es-listo .num { opacity: 0.6; }
   .participante.ocupado { opacity: 0.45; pointer-events: none; }
   .participante .cabeza { display: flex; align-items: center; gap: 12px; }
@@ -302,12 +289,12 @@
     font-size: 0.92rem;
     color: var(--muted);
   }
-  .participante.es-cantando .num { background: var(--grad); color: #1a0f2b; }
+  .participante.es-cantando .num { background: var(--grad-rojo); color: #fff; }
   .participante .datos { flex: 1; min-width: 0; }
   .participante .nombre { font-weight: 700; overflow-wrap: anywhere; }
   .participante .cancion { color: var(--muted); font-size: 0.86rem; overflow-wrap: anywhere; }
   .participante .meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-  .chip-votos { font-size: 0.78rem; font-weight: 700; color: #ff86b0; white-space: nowrap; }
+  .chip-votos { font-size: 0.78rem; font-weight: 700; color: #ff8a99; white-space: nowrap; }
   .participante .acciones { display: flex; gap: 8px; margin-top: 12px; }
   .participante .acciones .btn { flex: 1; }
   .participante .acciones .icono-btn { flex: 0 0 44px; width: 44px; height: 40px; }
@@ -342,7 +329,7 @@
     height: 38px;
     border-radius: 50%;
     background: hsl(var(--h) 80% 72%);
-    color: #1a0f2b;
+    color: var(--tinta);
     font-weight: 800;
     font-size: 0.85rem;
   }
@@ -379,7 +366,7 @@
   .ya li .m { flex: 0 0 auto; width: 28px; text-align: center; font-weight: 800; color: var(--muted); }
   .ya li .n { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
   .ya li .v { color: var(--muted); white-space: nowrap; font-size: 0.82rem; }
-  .ya li.p1 { background: rgba(255, 210, 63, 0.1); }
+  .ya li.p1 { background: rgba(var(--oro-rgb), 0.1); }
   .ya li.p1 .n { color: var(--accent2); }
 
   /* ---------- Hojas ---------- */
@@ -404,7 +391,8 @@
     <!-- ---------- Login ---------- -->
     <section id="pantallaClave" class="login oculto">
       <form class="login-card entra" id="formClave">
-        <div class="logo-tile" aria-hidden="true">🎤</div>
+        <img class="insignia-cevaz" src="cevaz-insignia.png" alt="CEVAZ" width="112" height="112" />
+        <p class="kicker">CEVAZ</p>
         <h1>Karaoke Night</h1>
         <p class="sub">Panel de admin · Iniciá sesión</p>
         <input class="campo" id="usuarioInput" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Usuario" aria-label="Usuario" />
@@ -421,10 +409,10 @@
     <section id="pantallaAdmin" class="oculto">
       <header class="cabecera">
         <div class="marca">
-          <div class="logo-tile" aria-hidden="true">🎤</div>
+          <img class="logo-cevaz" src="cevaz-logo.png" alt="CEVAZ" width="40" height="40" />
           <div>
+            <p class="kicker">CEVAZ · Admin</p>
             <h1>Karaoke Night</h1>
-            <p>Panel de admin</p>
           </div>
         </div>
         <div class="lado">

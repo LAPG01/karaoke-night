@@ -518,3 +518,23 @@ $$;
 
 revoke all on function estado_publico() from public;
 grant execute on function estado_publico() to anon, authenticated;
+
+-- ---------- Cambiar el voto ----------
+-- Deshacer el propio voto (para votar a otro). Solo con la votación abierta:
+-- una vez cerrada, el ranking ya está congelado.
+create or replace function quitar_voto(p_dispositivo uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not (select votacion_abierta from evento where id) then
+    raise exception 'La votación está cerrada';
+  end if;
+  delete from votos where dispositivo = p_dispositivo;
+end;
+$$;
+
+revoke all on function quitar_voto(uuid) from public;
+grant execute on function quitar_voto(uuid) to anon, authenticated;

@@ -1,18 +1,29 @@
+/* Paleta CEVAZ: el azul del logo, oscurecido, de fondo; su rojo para lo
+   principal y lo que está en vivo; el dorado de la esfera para destacar. */
 :root {
-  --bg: #0e0718;
-  --card: #1a0f2e;
-  --card-2: #23153d;
-  --line: rgba(255, 255, 255, 0.08);
-  --accent: #ff2d78;
-  --accent2: #ffd23f;
-  --cyan: #2de2e6;
-  --text: #fbf7ff;
-  --muted: #a99bc4;
-  --dim: #6f6390;
+  --bg: #061430;
+  --card: #0d2149;
+  --card-2: #142c5e;
+  --hero: #14306a;
+  --line: rgba(255, 255, 255, 0.09);
+  --accent: #e0314b;
+  --accent2: #f6b21a;
+  --cyan: #3e86e8;
+  --text: #f4f7ff;
+  --muted: #a9b8d8;
+  --dim: #6f80a8;
   --ok: #3ddc97;
   --danger: #ff6b6b;
+  --tinta: #071633;
+  --rojo-rgb: 224, 49, 75;
+  --oro-rgb: 246, 178, 26;
+  --fondo-rgb: 6, 20, 48;
+  --card-rgb: 13, 33, 73;
+  --hero-rgb: 20, 48, 106;
   --radius: 16px;
   --grad: linear-gradient(90deg, var(--accent), var(--accent2));
+  --grad-rojo: linear-gradient(90deg, #c2233c, #e8414f);
+  --grad-oro: linear-gradient(135deg, #f6b21a, #ffd45c);
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -30,7 +41,7 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   background:
-    radial-gradient(120% 50% at 50% -10%, #3b1763 0%, transparent 60%),
+    radial-gradient(120% 50% at 50% -10%, #1b3f86 0%, transparent 60%),
     var(--bg);
   background-attachment: fixed;
 }
@@ -144,10 +155,10 @@ h2.seccion .cuenta {
 .btn:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
 .btn[disabled] { opacity: 0.5; cursor: default; }
 .btn-primario {
-  background: var(--grad);
-  color: #1a0f2b;
-  box-shadow: 0 6px 20px rgba(255, 45, 120, 0.25);
-  --spin: #1a0f2b;
+  background: var(--grad-rojo);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(var(--rojo-rgb), 0.3);
+  --spin: #fff;
 }
 .btn-primario:hover { filter: brightness(1.08); }
 .btn-secundario {
@@ -201,7 +212,7 @@ h2.seccion .cuenta {
   text-transform: uppercase;
   white-space: nowrap;
 }
-.badge-cantando { background: rgba(255, 45, 120, 0.16); color: #ff86b0; }
+.badge-cantando { background: rgba(var(--rojo-rgb), 0.16); color: #ff8a99; }
 .badge-pendiente { background: rgba(255, 255, 255, 0.07); color: var(--muted); }
 .badge-listo { background: rgba(61, 220, 151, 0.13); color: var(--ok); }
 
@@ -214,9 +225,9 @@ h2.seccion .cuenta {
 }
 .punto-vivo.apagado { background: var(--dim); animation: none; }
 @keyframes pulso {
-  0% { box-shadow: 0 0 0 0 rgba(255, 45, 120, 0.7); }
-  70% { box-shadow: 0 0 0 9px rgba(255, 45, 120, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 45, 120, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(var(--rojo-rgb), 0.7); }
+  70% { box-shadow: 0 0 0 9px rgba(var(--rojo-rgb), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--rojo-rgb), 0); }
 }
 
 /* Ecualizador animado */
@@ -242,7 +253,7 @@ h2.seccion .cuenta {
 }
 .cambio { animation: cambio 1.2s var(--ease); }
 @keyframes cambio {
-  0% { box-shadow: 0 0 0 2px var(--accent2), 0 0 24px rgba(255, 210, 63, 0.45); }
+  0% { box-shadow: 0 0 0 2px var(--accent2), 0 0 24px rgba(var(--oro-rgb), 0.45); }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
 .sacudir { animation: sacudir 0.4s; }
@@ -276,7 +287,7 @@ h2.seccion .cuenta {
 }
 .toast.error { border-left-color: var(--danger); background: #2e1424; }
 .toast.borrado { border-left-color: var(--danger); }
-.toast.turno { border-left-color: #b57bff; }
+.toast.turno { border-left-color: #5b9bff; }
 .toast.revelar { border-left-color: var(--accent2); }
 
 .confeti {
@@ -294,6 +305,35 @@ h2.seccion .cuenta {
 @keyframes toastEntra { from { opacity: 0; transform: translateY(16px); } }
 @keyframes toastSale { to { opacity: 0; transform: translateY(16px); } }
 
+/* ---------- Marca CEVAZ ---------- */
+.logo-cevaz {
+  flex: 0 0 auto;
+  display: block;
+  width: 40px;
+  height: 40px;
+  padding: 3px;
+  border-radius: 12px;
+  background: #fff;
+  object-fit: contain;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+.insignia-cevaz {
+  display: block;
+  width: 112px;
+  height: 112px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  box-shadow: 0 10px 40px rgba(var(--rojo-rgb), 0.25), 0 0 0 6px rgba(255, 255, 255, 0.06);
+}
+.kicker {
+  margin: 0;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--accent2);
+}
+
 /* ---------- Campos de texto ---------- */
 .campo {
   width: 100%;
@@ -302,13 +342,13 @@ h2.seccion .cuenta {
   padding: 0 16px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(10, 5, 20, 0.6);
+  background: rgba(var(--fondo-rgb), 0.7);
   color: var(--text);
   font: inherit;
   font-size: 1.05rem; /* >= 16px: evita el zoom automático de iOS */
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-.campo:focus { outline: none; border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(255, 210, 63, 0.18); }
+.campo:focus { outline: none; border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(var(--oro-rgb), 0.18); }
 .campo::placeholder { color: var(--dim); }
 
 /* ---------- Hojas que suben desde abajo ---------- */
