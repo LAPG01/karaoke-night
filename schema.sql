@@ -1,7 +1,7 @@
 -- Karaoke Night — esquema para Supabase.
--- La clave de admin NO está acá (este archivo es público). Después de correr
--- esto, fijala una vez desde el SQL Editor con:
---   select fijar_clave_admin('tu-clave');
+-- El usuario y la contraseña del admin NO están acá (este archivo es público).
+-- Después de correr todo, fijalos desde el SQL Editor con:
+--   select fijar_clave_admin('usuario', 'contraseña');
 
 create extension if not exists pgcrypto with schema extensions;
 
@@ -409,3 +409,86 @@ begin
   alter publication supabase_realtime add table evento;
 exception when duplicate_object then null;
 end $$;
+
+-- ---------- Usuario, contraseña y sesiones ----------
+-- El login devuelve un pase de sesión (24 h). Las funciones de admin reciben
+-- ese pase en p_clave; la contraseña solo viaja una vez, al iniciar sesión.
+create table if not exists sesiones_admin (
+  token uuid primary key default gen_random_uuid(),
+  expira timestamptz not null default now() + interval '24 hours'
+);
+alter table sesiones_admin enable row level security;
+
+alter table config_admin add column if not exists usuario text;
+update config_admin set usuario = 'admin' where usuario is null;
+alter table config_admin alter column usuario set not null;
+
+drop function if exists fijar_clave_admin(text);
+create or replace function fijar_clave_admin(p_usuario text, p_clave text)
+returns void
+language sql
+security definer
+set search_path = public, extensions
+as $$
+  insert into config_admin (id, usuario, clave_hash)
+  values (true, lower(trim(p_usuario)), crypt(p_clave, gen_salt('bf')))
+  on conflict (id) do update set usuario = excluded.usuario, clave_hash = excluded.clave_hash;
+  delete from sesiones_admin where true;
+$$;
+
+create or replace function iniciar_sesion(p_usuario text, p_clave text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  t uuid;
+begin
+  delete from sesiones_admin where expira < now();
+  if not exists (
+    select 1 from config_admin
+    where usuario = lower(trim(coalesce(p_usuario, '')))
+      and clave_hash = crypt(coalesce(p_clave, ''), clave_hash)
+  ) then
+    perform pg_sleep(0.4); -- frena a quien quiera probar claves en serie
+    raise exception 'Usuario o contraseña incorrectos';
+  end if;
+  insert into sesiones_admin default values returning token into t;
+  return t;
+end;
+$$;
+
+create or replace function cerrar_sesion(p_token text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from sesiones_admin where token = p_token::uuid;
+exception when invalid_text_representation then null;
+end;
+$$;
+
+-- Reemplaza la versión de arriba: ahora valida el pase de sesión.
+create or replace function _clave_admin_valida(p_clave text)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  return exists (select 1 from sesiones_admin where token = p_clave::uuid and expira > now());
+exception when invalid_text_representation then
+  return false;
+end;
+$$;
+
+revoke all on function fijar_clave_admin(text, text) from public, anon, authenticated;
+revoke all on function _clave_admin_valida(text) from public, anon, authenticated;
+revoke all on function iniciar_sesion(text, text) from public;
+revoke all on function cerrar_sesion(text) from public;
+grant execute on function iniciar_sesion(text, text) to anon, authenticated;
+grant execute on function cerrar_sesion(text) to anon, authenticated;

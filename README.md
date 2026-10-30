@@ -24,10 +24,12 @@ Hecha con HTML/CSS/JS sin build, Supabase (base de datos + tiempo real) y GitHub
 
 - La clave pública de Supabase va en el navegador a propósito. Lo que protege los
   datos son las políticas RLS y las funciones de `schema.sql`.
-- La clave de admin **no está en este repo**: vive hasheada (bcrypt) en una tabla
-  privada. Para cambiarla, en Supabase > SQL Editor:
+- El usuario y la contraseña del admin **no están en este repo**: viven en una tabla
+  privada, con la contraseña hasheada (bcrypt). Al iniciar sesión la base devuelve
+  un pase que vence en 24 h; el navegador guarda ese pase, nunca la contraseña.
+  Para cambiarlos, en Supabase > SQL Editor (cierra todas las sesiones abiertas):
   ```sql
-  select fijar_clave_admin('la-nueva-clave');
+  select fijar_clave_admin('usuario', 'contraseña');
   ```
 - "Un voto por persona" es un voto por dispositivo: alcanza para un evento, pero
   alguien que borre los datos del navegador podría votar de nuevo.

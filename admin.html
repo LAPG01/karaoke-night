@@ -51,8 +51,9 @@
   .login-card .logo-tile { width: 72px; height: 72px; border-radius: 24px; font-size: 2.1rem; margin: 0 auto 16px; box-shadow: 0 10px 34px rgba(255, 45, 120, 0.45); }
   .login-card h1 { margin: 0; font-size: 1.7rem; font-weight: 800; }
   .login-card .sub { margin: 6px 0 22px; color: var(--muted); }
+  .login-card .campo { text-align: center; }
   .clave-caja { position: relative; }
-  .clave-caja .campo { padding-right: 56px; text-align: center; letter-spacing: 0.04em; }
+  .clave-caja .campo { padding-left: 56px; padding-right: 56px; letter-spacing: 0.04em; }
   .ver-clave {
     position: absolute;
     top: 4px;
@@ -405,10 +406,11 @@
       <form class="login-card entra" id="formClave">
         <div class="logo-tile" aria-hidden="true">🎤</div>
         <h1>Karaoke Night</h1>
-        <p class="sub">Panel de admin · Ingresá la clave</p>
+        <p class="sub">Panel de admin · Iniciá sesión</p>
+        <input class="campo" id="usuarioInput" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Usuario" aria-label="Usuario" />
         <div class="clave-caja">
-          <input class="campo" id="claveInput" type="password" autocomplete="current-password" placeholder="Clave de admin" aria-label="Clave de admin" />
-          <button class="ver-clave" id="verClave" type="button" aria-label="Mostrar clave">👁</button>
+          <input class="campo" id="claveInput" type="password" autocomplete="current-password" placeholder="Contraseña" aria-label="Contraseña" />
+          <button class="ver-clave" id="verClave" type="button" aria-label="Mostrar contraseña">👁</button>
         </div>
         <button class="btn btn-primario btn-ancho" id="btnEntrar" type="submit" style="min-height: 52px"><span>Entrar</span></button>
         <p class="mensaje-error oculto" id="mensajeClave" role="alert"></p>
@@ -555,11 +557,14 @@
     const pantallaClave = $("pantallaClave");
     const pantallaAdmin = $("pantallaAdmin");
     const formClave = $("formClave");
+    const usuarioInput = $("usuarioInput");
     const claveInput = $("claveInput");
     const btnEntrar = $("btnEntrar");
     const mensajeClave = $("mensajeClave");
 
-    let clave = sessionStorage.getItem("karaoke_clave") || "";
+    // Se guarda solo el pase de sesión que devuelve la base, nunca la contraseña.
+    sessionStorage.removeItem("karaoke_clave");
+    let sesion = sessionStorage.getItem("karaoke_sesion") || "";
     let participantes = [];
     let votos = new Map();
     let anchosAnteriores = new Map();
@@ -642,10 +647,15 @@
     }).observe($("hojaConfirmar"), { attributes: true, attributeFilter: ["class"] });
 
     // ---------- Acceso ----------
-    async function verificar(c) {
-      const { data, error } = await conCarga(supabaseClient.rpc("verificar_clave", { p_clave: c }));
+    async function sesionValida(t) {
+      const { data, error } = await conCarga(supabaseClient.rpc("verificar_clave", { p_clave: t }));
       if (error) throw error;
       return data === true;
+    }
+
+    function olvidarSesion() {
+      sessionStorage.removeItem("karaoke_sesion");
+      sesion = "";
     }
 
     function mostrarLogin(mensaje) {
@@ -655,7 +665,7 @@
         mensajeClave.textContent = mensaje;
         mensajeClave.classList.remove("oculto");
       }
-      claveInput.focus();
+      (usuarioInput.value ? claveInput : usuarioInput).focus();
     }
 
     function mostrarConexion(estado) {
@@ -674,7 +684,7 @@
         suscribirCambios("participantes-admin", cargar, mostrarConexion, ["participantes", "evento"]);
         // Los votos no viajan por Realtime (la tabla es privada): se consultan cada 5 s.
         setInterval(() => {
-          if (clave && document.visibilityState === "visible" && !pantallaAdmin.classList.contains("oculto")) {
+          if (sesion && document.visibilityState === "visible" && !pantallaAdmin.classList.contains("oculto")) {
             cargarResultados();
           }
         }, 5000);
@@ -685,52 +695,56 @@
       const visible = claveInput.type === "text";
       claveInput.type = visible ? "password" : "text";
       $("verClave").textContent = visible ? "👁" : "🙈";
-      $("verClave").setAttribute("aria-label", visible ? "Mostrar clave" : "Ocultar clave");
+      $("verClave").setAttribute("aria-label", visible ? "Mostrar contraseña" : "Ocultar contraseña");
     });
 
     formClave.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const c = claveInput.value.trim();
-      if (!c) return claveInput.focus();
+      const usuario = usuarioInput.value.trim();
+      const contrasena = claveInput.value;
+      if (!usuario) return usuarioInput.focus();
+      if (!contrasena) return claveInput.focus();
       mensajeClave.classList.add("oculto");
       await conBoton(btnEntrar, async () => {
-        try {
-          if (await verificar(c)) {
-            clave = c;
-            sessionStorage.setItem("karaoke_clave", clave);
-            mostrarPanel();
-            toast("¡Bienvenido! 🎤");
-          } else {
-            mensajeClave.textContent = "Clave incorrecta.";
-            mensajeClave.classList.remove("oculto");
+        const { data, error } = await conCarga(
+          supabaseClient.rpc("iniciar_sesion", { p_usuario: usuario, p_clave: contrasena })
+        );
+        if (error) {
+          const credenciales = error.message.includes("incorrect");
+          mensajeClave.textContent = credenciales ? "Usuario o contraseña incorrectos." : "Sin conexión con el servidor. Probá de nuevo.";
+          mensajeClave.classList.remove("oculto");
+          if (credenciales) {
             formClave.classList.remove("entra", "sacudir");
             void formClave.offsetWidth;
             formClave.classList.add("sacudir");
             claveInput.select();
           }
-        } catch {
-          mensajeClave.textContent = "Sin conexión con el servidor. Probá de nuevo.";
-          mensajeClave.classList.remove("oculto");
+          return;
         }
+        sesion = data;
+        sessionStorage.setItem("karaoke_sesion", sesion);
+        claveInput.value = "";
+        mostrarPanel();
+        toast(`¡Bienvenido, ${usuario}! 🎤`);
       });
     });
 
     $("btnSalir").addEventListener("click", async () => {
-      const ok = await confirmar({ icono: "👋", titulo: "¿Cerrar sesión?", texto: "Para volver a entrar vas a necesitar la clave.", si: "Salir" });
+      const ok = await confirmar({ icono: "👋", titulo: "¿Cerrar sesión?", texto: "Para volver a entrar vas a necesitar el usuario y la contraseña.", si: "Salir" });
       if (!ok) return;
-      sessionStorage.removeItem("karaoke_clave");
-      clave = "";
-      claveInput.value = "";
+      supabaseClient.rpc("cerrar_sesion", { p_token: sesion });
+      olvidarSesion();
       mostrarLogin();
     });
 
     // ---------- Escritura ----------
+    // Las funciones de admin reciben el pase de sesión en p_clave.
     async function llamar(funcion, params) {
-      const { data, error } = await conCarga(supabaseClient.rpc(funcion, { p_clave: clave, ...params }));
+      const { data, error } = await conCarga(supabaseClient.rpc(funcion, { p_clave: sesion, ...params }));
       if (error) {
         if (error.message.includes("Clave incorrecta")) {
-          sessionStorage.removeItem("karaoke_clave");
-          mostrarLogin("La clave cambió. Ingresala de nuevo.");
+          olvidarSesion();
+          mostrarLogin("Tu sesión venció. Iniciá sesión de nuevo.");
         }
         throw error;
       }
@@ -1087,7 +1101,7 @@
 
     // Una sola consulta por actualización: el ranking se cuenta desde la lista de votos.
     async function cargarResultados() {
-      const { data, error } = await supabaseClient.rpc("lista_votos", { p_clave: clave });
+      const { data, error } = await supabaseClient.rpc("lista_votos", { p_clave: sesion });
       if (error) return;
       const cambio = data.length !== listaVotos.length || data.some((v, i) => v.id !== listaVotos[i]?.id);
       listaVotos = data;
@@ -1193,12 +1207,16 @@
     }
 
     // ---------- Arranque ----------
-    // Con la clave guardada se entra directo al panel (con skeleton) mientras se verifica.
-    if (clave) {
+    // Con una sesión guardada se entra directo al panel (con skeleton) mientras se verifica.
+    if (sesion) {
       pantallaAdmin.classList.remove("oculto");
       irA(vistaActual);
-      verificar(clave)
-        .then((ok) => (ok ? mostrarPanel() : mostrarLogin("La clave cambió. Ingresala de nuevo.")))
+      sesionValida(sesion)
+        .then((ok) => {
+          if (ok) return mostrarPanel();
+          olvidarSesion();
+          mostrarLogin("Tu sesión venció. Iniciá sesión de nuevo.");
+        })
         .catch(() => mostrarLogin("Sin conexión con el servidor."));
     } else {
       mostrarLogin();
