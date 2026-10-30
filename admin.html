@@ -137,6 +137,30 @@
   .resultados-pie { margin-top: 14px; font-size: 0.8rem; color: var(--muted); display: flex; justify-content: space-between; }
   .chip-votos { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
 
+  /* Quién votó */
+  #filtroVotantes { margin-bottom: 4px; }
+  .votantes { display: flex; flex-direction: column; }
+  .votante { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border-bottom: 1px solid var(--line); }
+  .votante:last-child { border-bottom: 0; }
+  .votante .avatar {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: hsl(var(--h) 80% 72%);
+    color: #1a0f2b;
+    font-weight: 800;
+    font-size: 0.85rem;
+  }
+  .votante .datos { flex: 1; min-width: 0; }
+  .votante .quien { font-weight: 600; overflow-wrap: anywhere; }
+  .votante .a-quien { font-size: 0.84rem; color: var(--muted); overflow-wrap: anywhere; }
+  .votante .a-quien strong { color: var(--text); font-weight: 600; }
+  .votante time { flex: 0 0 auto; font-size: 0.75rem; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .votantes .vacia { padding: 18px 0 8px; text-align: center; color: var(--muted); }
+
   .sk-part { padding: 14px; }
   .sk-part .cabeza { display: flex; gap: 12px; align-items: center; }
 
@@ -190,6 +214,16 @@
         <div class="sk-linea" style="height: 8px; margin-bottom: 18px"></div>
         <div class="sk-linea" style="width: 45%; margin-bottom: 10px"></div>
         <div class="sk-linea" style="height: 8px"></div>
+      </section>
+
+      <h2 class="seccion">Quién votó <span class="cuenta" id="cuentaVotantes">…</span></h2>
+      <section class="card">
+        <input id="filtroVotantes" type="search" placeholder="Buscar votante o participante…" autocomplete="off" aria-label="Buscar en la lista de votos" />
+        <div class="votantes" id="votantes">
+          <div class="votante"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 40%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 60%"></div></div></div>
+          <div class="votante"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 50%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 45%"></div></div></div>
+        </div>
+        <button class="btn btn-secundario btn-chico btn-ancho oculto" id="btnVerTodos" type="button" style="margin-top: 12px"><span>Ver todos</span></button>
       </section>
 
       <h2 class="seccion" id="tituloForm">Agregar participante</h2>
@@ -557,14 +591,84 @@
       anchosAnteriores = nuevos;
     }
 
+    // ---------- Quién votó ----------
+    const LIMITE_VOTANTES = 15;
+    let listaVotos = [];
+    let votosVistos = null;
+    let verTodos = false;
+
+    const normalizar = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+    function iniciales(nombre) {
+      const partes = nombre.trim().split(/\s+/);
+      return ((partes[0]?.[0] ?? "") + (partes[1]?.[0] ?? "")).toUpperCase();
+    }
+
+    // Mismo nombre, mismo color de avatar en cada actualización.
+    function tono(nombre) {
+      let h = 0;
+      for (const c of nombre) h = (h * 31 + c.charCodeAt(0)) % 360;
+      return h;
+    }
+
+    function renderVotantes() {
+      const nombres = new Map(participantes.map((p) => [p.id, p.nombre]));
+      const filtro = normalizar($("filtroVotantes").value.trim());
+      const coinciden = filtro
+        ? listaVotos.filter((v) => normalizar(v.votante + " " + (nombres.get(v.participante_id) ?? "")).includes(filtro))
+        : listaVotos;
+      const visibles = filtro || verTodos ? coinciden : coinciden.slice(0, LIMITE_VOTANTES);
+
+      $("cuentaVotantes").textContent = listaVotos.length === 1 ? "1 persona" : `${listaVotos.length} personas`;
+
+      const contenedor = $("votantes");
+      if (!listaVotos.length) {
+        contenedor.innerHTML = `<div class="vacia">Cuando alguien vote, aparece acá.</div>`;
+      } else if (!visibles.length) {
+        contenedor.innerHTML = `<div class="vacia">Nadie coincide con “${escapeHtml($("filtroVotantes").value.trim())}”.</div>`;
+      } else {
+        contenedor.innerHTML = visibles.map((v, i) => {
+          const nuevo = !votosVistos || !votosVistos.has(v.id);
+          const hora = new Date(v.created_at).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+          return `
+            <div class="votante ${nuevo ? "entra" : ""}" style="--i:${votosVistos ? 0 : i}">
+              <div class="avatar" style="--h:${tono(v.votante)}" aria-hidden="true">${escapeHtml(iniciales(v.votante))}</div>
+              <div class="datos">
+                <div class="quien">${escapeHtml(v.votante)}</div>
+                <div class="a-quien">votó por <strong>${escapeHtml(nombres.get(v.participante_id) ?? "—")}</strong></div>
+              </div>
+              <time datetime="${v.created_at}">${hora}</time>
+            </div>`;
+        }).join("");
+      }
+      votosVistos = new Set(listaVotos.map((v) => v.id));
+
+      const ocultos = coinciden.length - visibles.length;
+      const boton = $("btnVerTodos");
+      boton.classList.toggle("oculto", !(ocultos > 0 || (verTodos && !filtro && coinciden.length > LIMITE_VOTANTES)));
+      boton.firstElementChild.textContent = ocultos > 0 ? `Ver todos (${ocultos} más)` : "Mostrar menos";
+    }
+
+    $("filtroVotantes").addEventListener("input", renderVotantes);
+    $("btnVerTodos").addEventListener("click", () => {
+      verTodos = !verTodos;
+      renderVotantes();
+    });
+
+    // Una sola consulta por actualización: el ranking se cuenta desde la lista de votos.
     async function cargarResultados() {
-      const { data, error } = await supabaseClient.rpc("resultados", { p_clave: clave });
+      const { data, error } = await supabaseClient.rpc("lista_votos", { p_clave: clave });
       if (error) return;
-      const nuevos = new Map(data.map((r) => [r.participante_id, Number(r.votos)]));
-      const cambio = nuevos.size !== votos.size || [...nuevos].some(([id, n]) => votos.get(id) !== n);
-      votos = nuevos;
+      const cambio = data.length !== listaVotos.length || data.some((v, i) => v.id !== listaVotos[i]?.id);
+      listaVotos = data;
+      const conteo = new Map();
+      for (const v of data) conteo.set(v.participante_id, (conteo.get(v.participante_id) ?? 0) + 1);
+      votos = conteo;
       renderResultados();
-      if (cambio) render(participantes);
+      if (cambio || !votosVistos) {
+        renderVotantes();
+        render(participantes);
+      }
     }
 
     async function cargar() {
@@ -574,6 +678,8 @@
         return;
       }
       render(data);
+      // Un participante renombrado tiene que verse con su nombre nuevo en la lista de votos.
+      if (votosVistos) renderVotantes();
       cargarResultados();
     }
   </script>

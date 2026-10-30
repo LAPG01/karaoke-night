@@ -225,8 +225,9 @@ as $$
   select participante_id from votos where dispositivo = p_dispositivo;
 $$;
 
-create or replace function resultados(p_clave text)
-returns table (participante_id uuid, votos bigint)
+-- Solo admin: quién votó a quién. El ranking se cuenta a partir de esta lista.
+create or replace function lista_votos(p_clave text)
+returns table (id uuid, votante text, participante_id uuid, created_at timestamptz)
 language plpgsql
 stable
 security definer
@@ -237,13 +238,15 @@ begin
     raise exception 'Clave incorrecta';
   end if;
   return query
-    select v.participante_id, count(*) from votos v group by v.participante_id;
+    select v.id, v.votante, v.participante_id, v.created_at
+    from votos v
+    order by v.created_at desc;
 end;
 $$;
 
 revoke all on function votar(uuid, text, uuid) from public;
 revoke all on function mi_voto(uuid) from public;
-revoke all on function resultados(text) from public;
+revoke all on function lista_votos(text) from public;
 grant execute on function votar(uuid, text, uuid) to anon, authenticated;
 grant execute on function mi_voto(uuid) to anon, authenticated;
-grant execute on function resultados(text) to anon, authenticated;
+grant execute on function lista_votos(text) to anon, authenticated;
