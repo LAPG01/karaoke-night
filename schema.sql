@@ -492,3 +492,29 @@ revoke all on function iniciar_sesion(text, text) from public;
 revoke all on function cerrar_sesion(text) from public;
 grant execute on function iniciar_sesion(text, text) to anon, authenticated;
 grant execute on function cerrar_sesion(text) to anon, authenticated;
+
+-- ---------- Pantalla pública: todo en una consulta ----------
+-- Con 100-200 celulares consultando cada ~4 s (en vez de conexiones en vivo,
+-- que en el plan gratis topan en 200 y 100 mensajes/s), juntar participantes
+-- y revelación en una sola llamada reduce a la mitad los pedidos.
+create or replace function estado_publico()
+returns json
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select json_build_object(
+    'participantes', coalesce((
+      select json_agg(json_build_object(
+        'id', p.id, 'nombre', p.nombre, 'cancion', p.cancion,
+        'orden', p.orden, 'estado', p.estado, 'created_at', p.created_at)
+        order by p.orden nulls last, p.created_at)
+      from participantes p
+    ), '[]'::json),
+    'revelacion', estado_revelacion()
+  );
+$$;
+
+revoke all on function estado_publico() from public;
+grant execute on function estado_publico() to anon, authenticated;

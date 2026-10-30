@@ -618,28 +618,69 @@
       reveladosAntes = revelados;
     }
 
+    // ---------- Consulta periódica ----------
+    // Para 100-200 celulares no alcanzan las conexiones en vivo del plan gratis
+    // (200 conexiones, 100 mensajes/s): cada celular pide el estado completo,
+    // en una sola consulta, cada ~4 s mientras la pantalla está a la vista.
+    const CADA_MS = 4000;
+    let ultimaFirma = null;
+    let consultando = false;
+    let proxima = null;
+
     async function cargar() {
-      const [lista, rev] = await Promise.all([traerParticipantes(), traerRevelacion()]);
-      const error = lista.error || rev.error;
-      if (error) return renderError(error.message);
-      ultimaLista = lista.data;
+      if (consultando) return true;
+      consultando = true;
+      const primera = ultimaFirma === null;
+      // La barra de carga solo en la primera: cada 4 s sería un parpadeo constante.
+      const pedido = supabaseClient.rpc("estado_publico");
+      const { data, error } = primera ? await conCarga(pedido) : await pedido;
+      consultando = false;
+      mostrarConexion(!error);
+      if (error) {
+        if (primera) renderError(error.message);
+        return false;
+      }
+
+      // Si nada cambió no se redibuja: así un toque en "Votar" nunca cae sobre una lista que se está reemplazando.
+      const firma = JSON.stringify(data);
+      if (firma === ultimaFirma) return true;
+      ultimaFirma = firma;
+
+      ultimaLista = data.participantes;
       listaCargada = true;
-      revelacion = rev.data;
-      if (!revelacion.votacion_abierta) return renderResultados();
+      revelacion = data.revelacion;
+      if (!revelacion.votacion_abierta) {
+        renderResultados();
+        return true;
+      }
       reveladosAntes = null;
       festejado = false;
-      render(lista.data);
+      render(ultimaLista);
       // Si borraron a quien votó, su voto se borró con él: se vuelve a consultar.
-      if (miVoto && !lista.data.some((p) => p.id === miVoto)) cargarMiVoto();
+      if (miVoto && !ultimaLista.some((p) => p.id === miVoto)) cargarMiVoto();
+      return true;
     }
 
-    function mostrarConexion(estado) {
-      const punto = document.getElementById("vivoPunto");
-      const texto = document.getElementById("vivoTexto");
-      const conectado = estado === "SUBSCRIBED";
-      punto.classList.toggle("apagado", !conectado);
-      texto.textContent = conectado ? "En vivo" : "Reconectando";
-      if (conectado) cargar();
+    // El azar reparte las consultas: 200 celulares no le pegan al servidor en el mismo instante.
+    // Oculta, la página consulta mucho menos pero nunca se detiene: algunos navegadores
+    // integrados (como los de apps lectoras de QR) informan mal si la página está a la vista.
+    function programar(ms) {
+      clearTimeout(proxima);
+      proxima = setTimeout(async () => {
+        const ok = await cargar();
+        const base = document.visibilityState === "visible" ? CADA_MS : 30000;
+        programar(ok ? base + Math.random() * 1000 : base * 2);
+      }, ms);
+    }
+
+    // Al volver a mirar la pantalla, se pone al día al instante.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") programar(0);
+    });
+
+    function mostrarConexion(conectado) {
+      document.getElementById("vivoPunto").classList.toggle("apagado", !conectado);
+      document.getElementById("vivoTexto").textContent = conectado ? "En vivo" : "Reconectando";
     }
 
     // ---------- Portada ----------
@@ -727,8 +768,7 @@
       nombreInput.focus();
     }
 
-    cargar();
-    suscribirCambios("participantes-publico", cargar, mostrarConexion, ["participantes", "evento"]);
+    programar(0);
   </script>
 </body>
 </html>
