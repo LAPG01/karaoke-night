@@ -33,8 +33,15 @@ Hecha con HTML/CSS/JS sin build, Supabase (base de datos + tiempo real) y GitHub
   ```sql
   select fijar_clave_admin('usuario', 'contraseña');
   ```
-- "Un voto por persona" es un voto por dispositivo: alcanza para un evento, pero
-  alguien que borre los datos del navegador podría votar de nuevo.
+- **Un voto por celular.** Cada voto guarda la huella del celular (datos de hardware
+  iguales en todos sus navegadores, también en incógnito) y la IP real, que la toma
+  la base y no se puede falsificar. Misma huella y misma IP que un voto existente se
+  bloquea, y el intento aparece en el admin (Votos → Intentos bloqueados) para
+  aceptarlo si era otra persona con el mismo modelo de celular, o descartarlo.
+  Límites: no hay forma 100% certera de identificar un celular desde una página web.
+  Quien cambie de red (WiFi → datos) **y** de navegador puede volver a votar; para
+  eso está el botón de anular votos en "Quién votó". Una persona con conocimientos
+  técnicos podría inventar huellas llamando a la API a mano.
 
 ## Historial
 

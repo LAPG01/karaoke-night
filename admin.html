@@ -387,6 +387,21 @@
   .ya li.p1 { background: rgba(var(--oro-rgb), 0.1); }
   .ya li.p1 .n { color: var(--accent2); }
 
+  /* ---------- Intentos bloqueados y anular ---------- */
+  .ocupado { opacity: 0.45; pointer-events: none; }
+  .ayuda-bloqueados { margin: -4px 0 10px; color: var(--muted); font-size: 0.84rem; line-height: 1.4; }
+  .ayuda-bloqueados strong { color: var(--text); }
+  #bloqueados { border-color: rgba(var(--oro-rgb), 0.45); background: rgba(var(--oro-rgb), 0.06); display: flex; flex-direction: column; gap: 12px; }
+  .bloqueado { display: flex; flex-direction: column; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .bloqueado:last-child { padding-bottom: 0; border-bottom: 0; }
+  .bloqueado .quien { font-weight: 700; overflow-wrap: anywhere; }
+  .bloqueado .hora { color: var(--dim); font-weight: 500; font-size: 0.78rem; margin-left: 6px; }
+  .bloqueado .detalle { color: var(--muted); font-size: 0.86rem; line-height: 1.35; overflow-wrap: anywhere; }
+  .bloqueado .detalle strong { color: var(--text); font-weight: 600; }
+  .bloqueado .acciones { display: flex; gap: 8px; }
+  .bloqueado .acciones .btn { flex: 1; }
+  .votante .anular { flex: 0 0 auto; width: 36px; height: 36px; font-size: 0.85rem; border-color: rgba(255, 107, 107, 0.3); }
+
   /* ---------- Historial ---------- */
   .ayuda-historial { margin: -4px 0 14px; color: var(--muted); font-size: 0.88rem; line-height: 1.4; }
   .ayuda-historial strong { color: var(--text); }
@@ -509,6 +524,11 @@
           <div class="sk-linea" style="width: 45%; margin-bottom: 10px"></div>
           <div class="sk-linea" style="height: 8px"></div>
         </section>
+        <div class="bloque-bloqueados oculto">
+          <h2 class="seccion">⚠️ Intentos bloqueados <span class="cuenta" id="cuentaBloqueados">0</span></h2>
+          <p class="ayuda-bloqueados">Votos que llegaron desde un celular que ya había votado (otro navegador o incógnito). Si es <strong>otra persona</strong> con el mismo modelo de celular, aceptalo; si es la misma persona, descartalo.</p>
+          <section class="card" id="bloqueados"></section>
+        </div>
         <h2 class="seccion">Quién votó <span class="cuenta" id="cuentaVotantes">…</span></h2>
         <section class="card">
           <div class="buscador">
@@ -1149,6 +1169,7 @@
                 <div class="a-quien">votó por <strong>${escapeHtml(nombres.get(v.participante_id) ?? "—")}</strong></div>
               </div>
               <time datetime="${v.created_at}">${hora}</time>
+              ${revelacion?.votacion_abierta ? `<button class="icono-btn anular" data-anular="${v.id}" type="button" aria-label="Anular el voto de ${escapeHtml(v.votante)}" title="Anular voto">🚫</button>` : ""}
             </div>`;
         }).join("");
       }
@@ -1166,19 +1187,97 @@
       renderVotantes();
     });
 
-    // Una sola consulta por actualización: el ranking se cuenta desde la lista de votos.
+    // ---------- Intentos bloqueados ----------
+    let bloqueados = [];
+    let firmaBloqueados = "";
+
+    function renderBloqueados() {
+      const caja = $("bloqueados");
+      const nombres = new Map(participantes.map((p) => [p.id, p.nombre]));
+      $("cuentaBloqueados").textContent = bloqueados.length;
+      caja.closest(".bloque-bloqueados").classList.toggle("oculto", !bloqueados.length);
+      caja.innerHTML = bloqueados.map((b) => `
+        <div class="bloqueado entra" data-id="${b.id}">
+          <div class="datos">
+            <div class="quien">${escapeHtml(b.votante)} <span class="hora">${new Date(b.created_at).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}</span></div>
+            <div class="detalle">Quiso votar por <strong>${escapeHtml(nombres.get(b.participante_id) ?? "—")}</strong> desde el mismo celular que <strong>${escapeHtml(b.coincide_con)}</strong></div>
+          </div>
+          <div class="acciones">
+            <button class="btn btn-secundario btn-chico" data-bloqueado="descartar" type="button"><span>Descartar</span></button>
+            <button class="btn btn-primario btn-chico" data-bloqueado="aceptar" type="button"><span>Aceptar voto</span></button>
+          </div>
+        </div>`).join("");
+    }
+
+    $("bloqueados").addEventListener("click", async (e) => {
+      const boton = e.target.closest("[data-bloqueado]");
+      if (!boton) return;
+      const fila = boton.closest(".bloqueado");
+      const b = bloqueados.find((x) => x.id === fila.dataset.id);
+      if (!b) return;
+      if (boton.dataset.bloqueado === "aceptar") {
+        const ok = await confirmar({
+          icono: "✅",
+          titulo: `¿Aceptar el voto de ${b.votante}?`,
+          texto: `Hacelo solo si es otra persona con el mismo modelo de celular que ${b.coincide_con}. Si es la misma persona votando dos veces, descartalo.`,
+          si: "Aceptar voto",
+        });
+        if (!ok) return;
+      }
+      await accionSobre(fila, boton, async () => {
+        if (boton.dataset.bloqueado === "aceptar") {
+          await llamar("aceptar_bloqueado", { p_id: b.id });
+          toast(`✅ Voto de ${b.votante} aceptado`);
+        } else {
+          await llamar("descartar_bloqueado", { p_id: b.id });
+          toast(`🗑 Intento de ${b.votante} descartado`, "borrado");
+        }
+      });
+    });
+
+    // Anular un voto desde "Quién votó".
+    $("votantes").addEventListener("click", async (e) => {
+      const boton = e.target.closest("[data-anular]");
+      if (!boton) return;
+      const v = listaVotos.find((x) => x.id === boton.dataset.anular);
+      if (!v) return;
+      const nombre = participantes.find((p) => p.id === v.participante_id)?.nombre ?? "—";
+      const ok = await confirmar({
+        icono: "🚫",
+        titulo: `¿Anular el voto de ${v.votante}?`,
+        texto: `Se resta el voto a ${nombre}. Esa persona va a poder votar de nuevo.`,
+        si: "Anular voto",
+        peligro: true,
+      });
+      if (!ok) return;
+      await accionSobre(boton.closest(".votante"), boton, async () => {
+        await llamar("anular_voto", { p_id: v.id });
+        toast(`🚫 Voto de ${v.votante} anulado`, "borrado");
+      });
+    });
+
+    // Una sola consulta por actualización: votos e intentos bloqueados juntos;
+    // el ranking se cuenta desde la lista de votos.
     async function cargarResultados() {
-      const { data, error } = await supabaseClient.rpc("lista_votos", { p_clave: sesion });
+      const { data, error } = await supabaseClient.rpc("votos_admin", { p_clave: sesion });
       if (error) return;
-      const cambio = data.length !== listaVotos.length || data.some((v, i) => v.id !== listaVotos[i]?.id);
-      listaVotos = data;
+      const lista = data.votos;
+      const cambio = lista.length !== listaVotos.length || lista.some((v, i) => v.id !== listaVotos[i]?.id);
+      listaVotos = lista;
       const conteo = new Map();
-      for (const v of data) conteo.set(v.participante_id, (conteo.get(v.participante_id) ?? 0) + 1);
+      for (const v of lista) conteo.set(v.participante_id, (conteo.get(v.participante_id) ?? 0) + 1);
       votos = conteo;
       renderResultados();
       if (cambio || !votosVistos) {
         renderVotantes();
         render(participantes);
+      }
+      const firma = data.bloqueados.map((b) => b.id + b.created_at).join();
+      if (firma !== firmaBloqueados) {
+        if (data.bloqueados.length > bloqueados.length && votosVistos) toast(`⚠️ ${data.bloqueados[0].votante} intentó votar desde un celular que ya votó`, "error");
+        firmaBloqueados = firma;
+        bloqueados = data.bloqueados;
+        renderBloqueados();
       }
     }
 
@@ -1205,6 +1304,8 @@
     function renderRevelar() {
       if (!revelacion) return;
       renderAvisoCerrada();
+      // El botón de anular solo existe con la votación abierta.
+      if (votosVistos) renderVotantes();
       const { votacion_abierta, revelados, total, puestos } = revelacion;
       const caja = $("revelar");
       $("estadoFinal").textContent = votacion_abierta ? "Votación abierta" : `${revelados} de ${total} revelados`;

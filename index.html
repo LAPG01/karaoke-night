@@ -219,6 +219,8 @@
   .banner-voto.hecho { border-color: rgba(61, 220, 151, 0.3); background: rgba(61, 220, 151, 0.07); }
   .banner-voto .icono { font-size: 1.4rem; }
   .banner-voto .texto { flex: 1; min-width: 0; }
+  .banner-voto.bloqueado { border-color: rgba(var(--oro-rgb), 0.45); background: rgba(var(--oro-rgb), 0.09); }
+  .banner-voto.bloqueado small { display: block; margin-top: 6px; color: var(--muted); font-size: 0.8rem; line-height: 1.35; }
   .banner-voto .btn { flex: 0 0 auto; }
   .link-nombre {
     display: inline;
@@ -425,22 +427,71 @@
       dispositivo = nuevoId();
       almacen.set("karaoke_dispositivo", dispositivo);
     }
+    // Huella del celular: datos de hardware que dan igual en todos sus navegadores,
+    // también en incógnito. Solo usa datos que Chrome, Safari y Firefox informan
+    // igual (no el idioma ni la memoria, que cambian según el navegador). Dos
+    // celulares del mismo modelo pueden dar la misma huella: por eso la base la
+    // combina con la IP y el admin puede aceptar a quien quede bloqueado sin culpa.
+    function calcularHuella() {
+      const ua = navigator.userAgent;
+      const so = /iPhone|iPad|iPod/.test(ua) ? "ios" : /Android/.test(ua) ? "android" : /Mac/.test(ua) ? "mac" : /Win/.test(ua) ? "win" : "otro";
+      let gpu = "";
+      try {
+        const gl = document.createElement("canvas").getContext("webgl");
+        const ext = gl && gl.getExtension("WEBGL_debug_renderer_info");
+        gpu = gl ? gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER) : "";
+      } catch {}
+      const datos = [
+        so,
+        [screen.width, screen.height].sort((a, b) => a - b).join("x"),
+        Math.round(devicePixelRatio * 100),
+        screen.colorDepth,
+        navigator.hardwareConcurrency || 0,
+        navigator.maxTouchPoints || 0,
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+        String(gpu).toLowerCase().replace(/[^a-z0-9]/g, ""),
+      ].join("|");
+      // Dos pasadas de un hash rápido (cyrb53) con semillas distintas: 28 caracteres.
+      const hash = (texto, semilla) => {
+        let h1 = 0xdeadbeef ^ semilla;
+        let h2 = 0x41c6ce57 ^ semilla;
+        for (let i = 0; i < texto.length; i++) {
+          const c = texto.charCodeAt(i);
+          h1 = Math.imul(h1 ^ c, 2654435761);
+          h2 = Math.imul(h2 ^ c, 1597334677);
+        }
+        h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+        h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+        return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, "0");
+      };
+      return hash(datos, 1) + hash(datos, 2);
+    }
+    const huella = calcularHuella();
+
     let nombreVotante = almacen.get("karaoke_nombre") || "";
     let miVoto = null;
     let votoCargado = false;
+    // Este celular ya tiene un voto desde otro navegador: se espera a que el admin decida.
+    let bloqueado = false;
 
-    async function cargarMiVoto() {
-      const { data, error } = await conCarga(supabaseClient.rpc("mi_voto", { p_dispositivo: dispositivo }));
+    async function cargarMiVoto(silencioso = false) {
+      const pedido = supabaseClient.rpc("mi_voto", { p_dispositivo: dispositivo });
+      const { data, error } = silencioso ? await pedido : await conCarga(pedido);
       if (error) return;
       miVoto = data;
       votoCargado = true;
+      // Si el admin aceptó el voto bloqueado, ahora aparece como propio.
+      if (miVoto && bloqueado) {
+        bloqueado = false;
+        toast("✅ El organizador aceptó tu voto");
+      }
       if (listaCargada && revelacion.votacion_abierta) render(ultimaLista);
     }
 
     function votoHtml(p) {
       if (!nombreVotante || !votoCargado) return "";
       if (miVoto === p.id) return `<span class="tu-voto">❤ Tu voto</span>`;
-      if (miVoto) return "";
+      if (miVoto || bloqueado) return "";
       return `<button class="btn btn-votar" data-votar="${p.id}" type="button"><span>❤ Votar</span></button>`;
     }
 
@@ -454,6 +505,14 @@
             <span class="icono">💚</span>
             <span class="texto">¡Gracias, <strong>${nombre}</strong>! Votaste por <strong>${escapeHtml(elegido?.nombre ?? "tu favorito")}</strong>.</span>
             <button class="btn btn-secundario btn-chico" data-cambiar-voto type="button"><span>Cambiar</span></button>
+          </div>`;
+      }
+      if (bloqueado) {
+        return `
+          <div class="banner-voto bloqueado">
+            <span class="icono">⚠️</span>
+            <span class="texto"><strong>Ya se votó desde este celular</strong> (en otro navegador o pestaña). Cada celular tiene un voto.
+              <small>¿Sos otra persona y tenés el mismo modelo de celular que alguien que ya votó? Avisale al organizador: puede aceptar tu voto.</small></span>
           </div>`;
       }
       return `
@@ -653,6 +712,8 @@
       }
 
       // Si nada cambió no se redibuja: así un toque en "Votar" nunca cae sobre una lista que se está reemplazando.
+      if (bloqueado) cargarMiVoto(true);
+
       const firma = JSON.stringify(data);
       if (firma === ultimaFirma) return true;
       ultimaFirma = firma;
@@ -796,7 +857,7 @@
       const p = candidato;
       conBoton(hojaConfirmar, async () => {
         const { data, error } = await conCarga(
-          supabaseClient.rpc("votar", { p_dispositivo: dispositivo, p_votante: nombreVotante, p_participante: p.id })
+          supabaseClient.rpc("votar", { p_dispositivo: dispositivo, p_votante: nombreVotante, p_participante: p.id, p_huella: huella })
         );
         cerrarHoja();
         if (error) {
@@ -806,7 +867,13 @@
           else cargar();
           return;
         }
-        miVoto = data;
+        if (!data.ok) {
+          bloqueado = true;
+          render(ultimaLista);
+          toast("Ya se votó desde este celular.", "error");
+          return;
+        }
+        miVoto = data.participante;
         render(ultimaLista);
         lluviaDeConfeti(["❤️", "💖", "💕", "🎤", "✨"], 16);
         toast(`¡Voto registrado para ${p.nombre}! ❤`);
