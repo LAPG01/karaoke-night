@@ -881,6 +881,7 @@ create or replace function _ip_cliente()
 returns text
 language sql
 stable
+set search_path = public
 as $$
   select nullif(current_setting('request.headers', true), '')::json ->> 'cf-connecting-ip';
 $$;
