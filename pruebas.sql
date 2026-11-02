@@ -227,6 +227,32 @@ begin
   end if;
   ok := ok + 1;
 
+  -- ===== Sospechas: navegador falsificado y país de la IP =====
+  perform set_config('request.headers', '{"cf-connecting-ip": "20.0.0.1", "cf-ipcountry": "US"}', true);
+  r := votar(gen_random_uuid(), 'Desde AdsPower', (select id from participantes where nombre = 'Eli'),
+             'huella-adspower-perfil-000000001', array['gpu_pc', 'sin_tactil', 'inventada<script>']);
+  -- Página vieja (sin señales) desde la red Tor.
+  perform set_config('request.headers', '{"cf-connecting-ip": "20.0.0.2", "cf-ipcountry": "T1"}', true);
+  r := votar(gen_random_uuid(), 'Desde Tor', (select id from participantes where nombre = 'Eli'),
+             'huella-tor-perfil-0000000000001');
+  perform set_config('request.headers', '{"cf-connecting-ip": "186.167.250.1", "cf-ipcountry": "VE"}', true);
+  r := votar(gen_random_uuid(), 'Normal', (select id from participantes where nombre = 'Fede'),
+             'huella-normal-000000000000000001', array[]::text[]);
+  perform set_config('request.headers', '{"cf-connecting-ip": "10.0.0.1"}', true);
+  h := votos_admin(t);
+  if not ((select v -> 'sospechas' from json_array_elements(h -> 'votos') v where v ->> 'votante' = 'Desde AdsPower')::jsonb
+            @> '["gpu_pc", "sin_tactil", "ip_extranjera:US"]'::jsonb)
+     or jsonb_array_length((select v -> 'sospechas' from json_array_elements(h -> 'votos') v where v ->> 'votante' = 'Desde AdsPower')::jsonb) <> 3 then
+    raise exception 'FALLÓ sospechas de AdsPower (o se guardó la señal inventada): %', h;
+  end if;
+  if (select v -> 'sospechas' from json_array_elements(h -> 'votos') v where v ->> 'votante' = 'Desde Tor')::jsonb <> '["ip_tor"]'::jsonb then
+    raise exception 'FALLÓ sospecha de Tor: %', h;
+  end if;
+  if (select v -> 'sospechas' from json_array_elements(h -> 'votos') v where v ->> 'votante' = 'Normal')::jsonb <> '[]'::jsonb then
+    raise exception 'FALLÓ un voto normal desde Venezuela quedó marcado: %', h;
+  end if;
+  ok := ok + 1;
+
   -- Una competencia vacía no ensucia el historial.
   perform nueva_competencia(t, true);
   perform nueva_competencia(t, true);

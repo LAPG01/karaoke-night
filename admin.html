@@ -400,6 +400,11 @@
   .bloqueado .detalle strong { color: var(--text); font-weight: 600; }
   .bloqueado .acciones { display: flex; gap: 8px; }
   .bloqueado .acciones .btn { flex: 1; }
+  .chip-sospechosos { margin: 2px 0 6px; }
+  .chip-sospechosos.activo { background: var(--accent2); color: var(--tinta); border-color: var(--accent2); }
+  .votante.sospechoso { margin: 4px -8px; padding: 11px 8px; border-radius: 12px; background: rgba(var(--oro-rgb), 0.08); border-bottom-color: transparent; }
+  .votante .sospechas { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+  .votante .sospechas li { color: var(--accent2); font-size: 0.78rem; line-height: 1.3; }
   .votante .anular { flex: 0 0 auto; width: 36px; height: 36px; font-size: 0.85rem; border-color: rgba(255, 107, 107, 0.3); }
 
   /* ---------- Historial ---------- */
@@ -534,6 +539,7 @@
           <div class="buscador">
             <input class="campo" id="filtroVotantes" type="search" placeholder="Buscar votante o participante" autocomplete="off" aria-label="Buscar en la lista de votos" />
           </div>
+          <button class="chip chip-sospechosos oculto" id="btnSospechosos" type="button" aria-pressed="false"></button>
           <div class="votantes" id="votantes">
             <div class="votante"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 40%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 60%"></div></div></div>
             <div class="votante"><div class="sk-circulo"></div><div style="flex: 1"><div class="sk-linea" style="width: 50%; margin-bottom: 8px"></div><div class="sk-linea" style="width: 45%"></div></div></div>
@@ -1142,13 +1148,45 @@
       return h;
     }
 
+    // Por qué un voto quedó marcado, en palabras.
+    const MOTIVOS = {
+      automatizado: "navegador automatizado (robot)",
+      computadora: "votó desde una computadora",
+      sin_tactil: "dice ser celular pero no tiene pantalla táctil",
+      gpu_pc: "dice ser celular pero tiene placa de video de PC",
+      plugins: "dice ser celular pero tiene complementos de PC",
+      so_no_coincide: "el sistema operativo no coincide con lo que dice ser",
+      zona_horaria: "reloj en la zona horaria de otro país",
+      ip_tor: "conectado por la red Tor (anonimizador)",
+      ip_desconocida: "IP de origen desconocido",
+    };
+    function motivo(codigo) {
+      if (codigo.startsWith("ip_extranjera:")) return `IP de otro país (${codigo.split(":")[1]}): posible VPN o proxy`;
+      return MOTIVOS[codigo] ?? codigo;
+    }
+
+    let soloSospechosos = false;
+    $("btnSospechosos").addEventListener("click", () => {
+      soloSospechosos = !soloSospechosos;
+      renderVotantes();
+    });
+
     function renderVotantes() {
       const nombres = new Map(participantes.map((p) => [p.id, p.nombre]));
       const filtro = normalizar($("filtroVotantes").value.trim());
+      const sospechosos = listaVotos.filter((v) => v.sospechas?.length);
+      if (!sospechosos.length) soloSospechosos = false;
+      const chip = $("btnSospechosos");
+      chip.classList.toggle("oculto", !sospechosos.length);
+      chip.classList.toggle("activo", soloSospechosos);
+      chip.setAttribute("aria-pressed", String(soloSospechosos));
+      chip.textContent = `⚠️ Solo sospechosos (${sospechosos.length})`;
+
+      const base = soloSospechosos ? sospechosos : listaVotos;
       const coinciden = filtro
-        ? listaVotos.filter((v) => normalizar(v.votante + " " + (nombres.get(v.participante_id) ?? "")).includes(filtro))
-        : listaVotos;
-      const visibles = filtro || verTodos ? coinciden : coinciden.slice(0, LIMITE_VOTANTES);
+        ? base.filter((v) => normalizar(v.votante + " " + (nombres.get(v.participante_id) ?? "")).includes(filtro))
+        : base;
+      const visibles = filtro || verTodos || soloSospechosos ? coinciden : coinciden.slice(0, LIMITE_VOTANTES);
 
       $("cuentaVotantes").textContent = listaVotos.length === 1 ? "1 persona" : `${listaVotos.length} personas`;
 
@@ -1161,12 +1199,14 @@
         contenedor.innerHTML = visibles.map((v, i) => {
           const nuevo = !votosVistos || !votosVistos.has(v.id);
           const hora = new Date(v.created_at).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+          const sospechas = v.sospechas ?? [];
           return `
-            <div class="votante ${nuevo ? "entra" : ""}" style="--i:${votosVistos ? 0 : i}">
+            <div class="votante ${sospechas.length ? "sospechoso" : ""} ${nuevo ? "entra" : ""}" style="--i:${votosVistos ? 0 : i}">
               <div class="avatar" style="--h:${tono(v.votante)}" aria-hidden="true">${escapeHtml(iniciales(v.votante))}</div>
               <div class="datos">
                 <div class="quien">${escapeHtml(v.votante)}</div>
                 <div class="a-quien">votó por <strong>${escapeHtml(nombres.get(v.participante_id) ?? "—")}</strong></div>
+                ${sospechas.length ? `<ul class="sospechas">${sospechas.map((c) => `<li>⚠️ ${escapeHtml(motivo(c))}</li>`).join("")}</ul>` : ""}
               </div>
               <time datetime="${v.created_at}">${hora}</time>
               ${revelacion?.votacion_abierta ? `<button class="icono-btn anular" data-anular="${v.id}" type="button" aria-label="Anular el voto de ${escapeHtml(v.votante)}" title="Anular voto">🚫</button>` : ""}

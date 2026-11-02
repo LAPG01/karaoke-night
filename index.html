@@ -432,15 +432,20 @@
     // igual (no el idioma ni la memoria, que cambian según el navegador). Dos
     // celulares del mismo modelo pueden dar la misma huella: por eso la base la
     // combina con la IP y el admin puede aceptar a quien quede bloqueado sin culpa.
-    function calcularHuella() {
-      const ua = navigator.userAgent;
-      const so = /iPhone|iPad|iPod/.test(ua) ? "ios" : /Android/.test(ua) ? "android" : /Mac/.test(ua) ? "mac" : /Win/.test(ua) ? "win" : "otro";
-      let gpu = "";
+    function placaDeVideo() {
       try {
         const gl = document.createElement("canvas").getContext("webgl");
         const ext = gl && gl.getExtension("WEBGL_debug_renderer_info");
-        gpu = gl ? gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER) : "";
-      } catch {}
+        return String(gl ? gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER) : "");
+      } catch {
+        return "";
+      }
+    }
+    const gpu = placaDeVideo();
+
+    function calcularHuella() {
+      const ua = navigator.userAgent;
+      const so = /iPhone|iPad|iPod/.test(ua) ? "ios" : /Android/.test(ua) ? "android" : /Mac/.test(ua) ? "mac" : /Win/.test(ua) ? "win" : "otro";
       const datos = [
         so,
         [screen.width, screen.height].sort((a, b) => a - b).join("x"),
@@ -449,7 +454,7 @@
         navigator.hardwareConcurrency || 0,
         navigator.maxTouchPoints || 0,
         Intl.DateTimeFormat().resolvedOptions().timeZone,
-        String(gpu).toLowerCase().replace(/[^a-z0-9]/g, ""),
+        gpu.toLowerCase().replace(/[^a-z0-9]/g, ""),
       ].join("|");
       // Dos pasadas de un hash rápido (cyrb53) con semillas distintas: 28 caracteres.
       const hash = (texto, semilla) => {
@@ -467,6 +472,32 @@
       return hash(datos, 1) + hash(datos, 2);
     }
     const huella = calcularHuella();
+
+    // Navegadores anti-detección (AdsPower y similares) corren en una PC y se
+    // disfrazan de celular: inventan el modelo, pero dejan cabos sueltos. Estas
+    // señales no bloquean el voto: lo marcan ⚠ en el admin para que lo revise.
+    function revisarNavegador() {
+      const s = [];
+      const ua = navigator.userAgent;
+      const diceIos = /iPhone|iPad|iPod/.test(ua);
+      const diceAndroid = /Android/.test(ua);
+      const gpuDePc = /nvidia|geforce|quadro|radeon|amd |intel\(r\)|intel (uhd|hd|iris)|direct3d|d3d1|swiftshader|llvmpipe|vmware|virtualbox|parallels/i;
+      if (navigator.webdriver) s.push("automatizado");
+      if (!diceIos && !diceAndroid) {
+        s.push("computadora");
+      } else {
+        if (!navigator.maxTouchPoints) s.push("sin_tactil");
+        // Todo iPhone dice "Apple GPU"; un Android tiene GPU de celular (Adreno, Mali…).
+        if (gpu && (gpuDePc.test(gpu) || (diceIos && !/apple/i.test(gpu)))) s.push("gpu_pc");
+        // En celular, Chrome y Safari no informan complementos; en PC sí.
+        if (navigator.plugins && navigator.plugins.length > 0) s.push("plugins");
+        const plataforma = navigator.userAgentData?.platform;
+        if (plataforma && !/android|ios/i.test(plataforma)) s.push("so_no_coincide");
+      }
+      const zona = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (zona && zona !== "America/Caracas") s.push("zona_horaria");
+      return s;
+    }
 
     let nombreVotante = almacen.get("karaoke_nombre") || "";
     let miVoto = null;
@@ -857,7 +888,7 @@
       const p = candidato;
       conBoton(hojaConfirmar, async () => {
         const { data, error } = await conCarga(
-          supabaseClient.rpc("votar", { p_dispositivo: dispositivo, p_votante: nombreVotante, p_participante: p.id, p_huella: huella })
+          supabaseClient.rpc("votar", { p_dispositivo: dispositivo, p_votante: nombreVotante, p_participante: p.id, p_huella: huella, p_senales: revisarNavegador() })
         );
         cerrarHoja();
         if (error) {

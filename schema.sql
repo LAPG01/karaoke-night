@@ -1081,3 +1081,126 @@ grant execute on function votos_admin(text) to anon, authenticated;
 grant execute on function aceptar_bloqueado(text, uuid) to anon, authenticated;
 grant execute on function descartar_bloqueado(text, uuid) to anon, authenticated;
 grant execute on function anular_voto(text, uuid) to anon, authenticated;
+
+-- ---------- Votos sospechosos: navegador falsificado y país de la IP ----------
+-- Contra navegadores anti-detección (AdsPower y similares), que inventan una
+-- huella distinta por perfil y suelen salir por un proxy o VPN. No se bloquea:
+-- se marca ⚠ en el admin con el motivo, y el admin decide si anula.
+-- No se consulta ningún servicio externo: el país lo informa Cloudflare.
+
+-- Señales que manda la página al votar (datos del navegador que no cuadran).
+alter table votos add column if not exists senales text[] not null default '{}';
+-- País de la IP según Cloudflare (no se puede falsificar desde el navegador).
+alter table votos add column if not exists pais text;
+
+create or replace function _pais_cliente()
+returns text
+language sql
+stable
+set search_path = public
+as $$
+  select nullif(current_setting('request.headers', true), '')::json ->> 'cf-ipcountry';
+$$;
+revoke all on function _pais_cliente() from public, anon, authenticated;
+
+-- Reemplaza la versión de arriba: más las señales del navegador y el país.
+-- p_senales tiene valor por defecto: la página ya abierta en los celulares sigue andando.
+drop function if exists votar(uuid, text, uuid, text);
+create or replace function votar(
+  p_dispositivo uuid, p_votante text, p_participante uuid, p_huella text,
+  p_senales text[] default '{}'
+)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_ip text := _ip_cliente();
+  ya uuid;
+  duenio text;
+  senales text[];
+begin
+  if not (select votacion_abierta from evento where id) then
+    raise exception 'La votación está cerrada';
+  end if;
+  if length(trim(coalesce(p_votante, ''))) < 2 then
+    raise exception 'Escribí tu nombre';
+  end if;
+  if length(coalesce(p_huella, '')) < 16 then
+    raise exception 'Actualizá la página para poder votar';
+  end if;
+  -- Solo señales conocidas: lo que llega del navegador no se guarda a ciegas.
+  senales := array(
+    select distinct s from unnest(coalesce(p_senales, '{}')) s
+    where s = any (array['automatizado', 'computadora', 'sin_tactil', 'gpu_pc',
+                         'plugins', 'so_no_coincide', 'pantalla', 'zona_horaria'])
+  );
+  perform pg_advisory_xact_lock(hashtext('voto:' || p_huella || coalesce(v_ip, '')));
+
+  select participante_id into ya from votos where dispositivo = p_dispositivo;
+  if ya is not null then
+    raise exception 'Ya votaste';
+  end if;
+
+  select votante into duenio
+  from votos
+  where huella = p_huella and ip is not distinct from v_ip
+  limit 1;
+  if duenio is not null then
+    insert into votos_bloqueados (dispositivo, votante, participante_id, huella, ip, coincide_con)
+    values (p_dispositivo, left(trim(p_votante), 40), p_participante, p_huella, v_ip, duenio)
+    on conflict (dispositivo) do update
+      set votante = excluded.votante,
+          participante_id = excluded.participante_id,
+          coincide_con = excluded.coincide_con,
+          created_at = now();
+    return json_build_object('ok', false, 'motivo', 'mismo_celular');
+  end if;
+
+  insert into votos (dispositivo, votante, participante_id, huella, ip, senales, pais)
+  values (p_dispositivo, left(trim(p_votante), 40), p_participante, p_huella, v_ip, senales, _pais_cliente());
+  return json_build_object('ok', true, 'participante', p_participante);
+exception
+  when unique_violation then raise exception 'Ya votaste';
+  when foreign_key_violation then raise exception 'Ese participante ya no está en la lista';
+end;
+$$;
+
+-- Reemplaza la versión de arriba: cada voto trae sus sospechas.
+-- Cloudflare usa "T1" para la red Tor y "XX" cuando no sabe el país.
+create or replace function votos_admin(p_clave text)
+returns json
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  if not _clave_admin_valida(p_clave) then
+    raise exception 'Clave incorrecta';
+  end if;
+  return json_build_object(
+    'votos', coalesce((
+      select json_agg(json_build_object(
+        'id', v.id, 'votante', v.votante, 'participante_id', v.participante_id,
+        'created_at', v.created_at,
+        'sospechas', array_remove(v.senales || array[
+          case
+            when v.pais = 'T1' then 'ip_tor'
+            when v.pais = 'XX' then 'ip_desconocida'
+            when v.pais is not null and v.pais <> 'VE' then 'ip_extranjera:' || v.pais
+          end
+        ], null)) order by v.created_at desc)
+      from votos v), '[]'::json),
+    'bloqueados', coalesce((
+      select json_agg(json_build_object(
+        'id', b.id, 'votante', b.votante, 'participante_id', b.participante_id,
+        'coincide_con', b.coincide_con, 'created_at', b.created_at) order by b.created_at desc)
+      from votos_bloqueados b), '[]'::json)
+  );
+end;
+$$;
+
+revoke all on function votar(uuid, text, uuid, text, text[]) from public;
+grant execute on function votar(uuid, text, uuid, text, text[]) to anon, authenticated;

@@ -42,6 +42,14 @@ Hecha con HTML/CSS/JS sin build, Supabase (base de datos + tiempo real) y GitHub
   Quien cambie de red (WiFi → datos) **y** de navegador puede volver a votar; para
   eso está el botón de anular votos en "Quién votó". Una persona con conocimientos
   técnicos podría inventar huellas llamando a la API a mano.
+- **Votos sospechosos (⚠).** Contra navegadores anti-detección como AdsPower, que
+  inventan una huella por perfil y salen por proxy: la página revisa si el navegador
+  "cuadra" (dice ser celular pero tiene placa de video o complementos de PC, no tiene
+  pantalla táctil, el sistema no coincide, está automatizado o el reloj es de otro
+  país) y la base anota el país de la IP que informa Cloudflare (otro país, Tor o
+  desconocido). No bloquea: en "Quién votó" el voto aparece marcado con el motivo,
+  hay un filtro "Solo sospechosos" y el admin decide si lo anula. No se consulta
+  ningún servicio externo: las IPs de los votantes no salen de Supabase.
 
 ## Historial
 
