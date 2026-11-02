@@ -1204,3 +1204,114 @@ $$;
 
 revoke all on function votar(uuid, text, uuid, text, text[]) from public;
 grant execute on function votar(uuid, text, uuid, text, text[]) to anon, authenticated;
+
+-- ---------- Corregir nombres después de cerrar la votación ----------
+-- El ranking congelado y el historial guardan una copia del nombre. Ahora
+-- además recuerdan a qué participante corresponden, y editar_participante
+-- corrige esas copias: el público ve el nombre nuevo en los resultados.
+-- Solo cambia el texto: puestos y votos no se tocan.
+
+alter table ranking_final add column if not exists participante_id uuid;
+alter table historial_participantes add column if not exists participante_id uuid;
+alter table historial_votos add column if not exists participante_id uuid;
+
+-- Reemplaza la versión de arriba: guarda a qué participante es cada puesto.
+create or replace function cerrar_votacion(p_clave text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not _clave_admin_valida(p_clave) then
+    raise exception 'Clave incorrecta';
+  end if;
+  delete from ranking_final where true;
+  insert into ranking_final (orden, puesto, nombre, cancion, votos, participante_id)
+  select
+    row_number() over (order by coalesce(v.n, 0) desc, p.orden nulls last, p.created_at),
+    rank() over (order by coalesce(v.n, 0) desc),
+    p.nombre, p.cancion, coalesce(v.n, 0), p.id
+  from participantes p
+  left join (select participante_id, count(*)::int as n from votos group by participante_id) v
+    on v.participante_id = p.id;
+  update evento
+  set votacion_abierta = false,
+      revelados = 0,
+      total_puestos = (select count(*) from ranking_final)
+  where id;
+  perform _archivar_competencia();
+end;
+$$;
+
+-- Reemplaza la versión de arriba: el historial también guarda el participante.
+create or replace function _archivar_competencia()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  cid integer;
+begin
+  select competencia_id into cid from evento where id;
+  delete from historial_participantes where competencia_id = cid;
+  delete from historial_votos where competencia_id = cid;
+  insert into historial_participantes (competencia_id, turno, nombre, cancion, votos, puesto, participante_id)
+  select cid, p.orden, p.nombre, p.cancion, coalesce(v.n, 0),
+         rank() over (order by coalesce(v.n, 0) desc), p.id
+  from participantes p
+  left join (select participante_id, count(*)::int as n from votos group by participante_id) v
+    on v.participante_id = p.id;
+  insert into historial_votos (competencia_id, votante, participante, votado_at, participante_id)
+  select cid, v.votante, p.nombre, v.created_at, p.id
+  from votos v
+  join participantes p on p.id = v.participante_id;
+end;
+$$;
+revoke all on function _archivar_competencia() from public, anon, authenticated;
+
+-- Reemplaza la versión de arriba: también corrige el ranking congelado y el historial.
+create or replace function editar_participante(
+  p_clave text, p_id uuid, p_nombre text, p_cancion text, p_orden integer default null
+)
+returns participantes
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  fila participantes;
+  n integer;
+  a integer;
+  b integer;
+begin
+  if not _clave_admin_valida(p_clave) then
+    raise exception 'Clave incorrecta';
+  end if;
+  perform pg_advisory_xact_lock(hashtext('karaoke_turnos'));
+  select orden into a from participantes where id = p_id;
+  if a is null then
+    raise exception 'Participante no encontrado';
+  end if;
+  select count(*) into n from participantes;
+  b := least(greatest(coalesce(p_orden, a), 1), n);
+  update participantes
+  set orden = case
+    when id = p_id then b
+    when b < a then orden + 1
+    else orden - 1
+  end
+  where orden between least(a, b) and greatest(a, b);
+  update participantes
+  set nombre = trim(p_nombre), cancion = trim(p_cancion)
+  where id = p_id
+  returning * into fila;
+
+  -- Las copias guardadas al cerrar también se corrigen (solo el texto).
+  update ranking_final set nombre = fila.nombre, cancion = fila.cancion where participante_id = p_id;
+  update historial_participantes set nombre = fila.nombre, cancion = fila.cancion where participante_id = p_id;
+  update historial_votos set participante = fila.nombre where participante_id = p_id;
+  return fila;
+end;
+$$;

@@ -179,6 +179,23 @@ begin
   end if;
   ok := ok + 1;
 
+  -- ===== Corregir un nombre con los resultados ya revelados =====
+  perform revelar_siguiente(t);
+  perform revelar_siguiente(t);
+  perform editar_participante(t, (select id from participantes where nombre = 'Ana'), 'Ana María', 'Canción A2', null);
+  if not exists (select 1 from json_array_elements(estado_revelacion() -> 'puestos') p
+                 where p ->> 'nombre' = 'Ana María' and p ->> 'cancion' = 'Canción A2' and (p ->> 'votos')::int = 2)
+     or exists (select 1 from json_array_elements(estado_revelacion() -> 'puestos') p where p ->> 'nombre' = 'Ana') then
+    raise exception 'FALLÓ el público no ve el nombre corregido en los resultados: %', estado_revelacion();
+  end if;
+  if (select count(*) from historial_participantes where competencia_id = comp_a and nombre = 'Ana María' and votos = 2) <> 1
+     or (select count(*) from historial_votos where competencia_id = comp_a and participante = 'Ana María') <> 2
+     or exists (select 1 from historial_votos where competencia_id = comp_a and participante = 'Ana') then
+    raise exception 'FALLÓ el historial no tomó el nombre corregido';
+  end if;
+  perform editar_participante(t, (select id from participantes where nombre = 'Ana María'), 'Ana', 'Canción A', null);
+  ok := ok + 1;
+
   -- ===== Reabrir, votar más y volver a cerrar: el historial se actualiza sin duplicar =====
   perform reabrir_votacion(t);
   perform votar(gen_random_uuid(), 'Votante Cuatro', (select id from participantes where nombre = 'Beto'), 'huella-celular-cuatro-00000000004');
