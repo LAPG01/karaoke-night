@@ -1,5 +1,6 @@
-/* Paleta CEVAZ: el azul del logo, oscurecido, de fondo; su rojo para lo
-   principal y lo que está en vivo; el dorado de la esfera para destacar. */
+/* Paleta: azul marino de fondo; "principal" (botones y lo que está en vivo) y
+   "destacado" (quién sigue, medallas, ganador) vienen de la marca del evento,
+   editable desde el admin. Estos son los valores por defecto. */
 :root {
   --bg: #061430;
   --card: #0d2149;
@@ -24,6 +25,10 @@
   --grad: linear-gradient(90deg, var(--accent), var(--accent2));
   --grad-rojo: linear-gradient(90deg, #c2233c, #e8414f);
   --grad-oro: linear-gradient(135deg, #f6b21a, #ffd45c);
+  /* Texto que se lee sobre cada color; app.js los recalcula según la marca. */
+  --sobre-principal: #ffffff;
+  --sobre-destacado: #071633;
+  --principal-claro: #ff8a99;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -156,9 +161,9 @@ h2.seccion .cuenta {
 .btn[disabled] { opacity: 0.5; cursor: default; }
 .btn-primario {
   background: var(--grad-rojo);
-  color: #fff;
+  color: var(--sobre-principal);
   box-shadow: 0 6px 20px rgba(var(--rojo-rgb), 0.3);
-  --spin: #fff;
+  --spin: var(--sobre-principal);
 }
 .btn-primario:hover { filter: brightness(1.08); }
 .btn-secundario {
@@ -212,7 +217,7 @@ h2.seccion .cuenta {
   text-transform: uppercase;
   white-space: nowrap;
 }
-.badge-cantando { background: rgba(var(--rojo-rgb), 0.16); color: #ff8a99; }
+.badge-cantando { background: rgba(var(--rojo-rgb), 0.16); color: var(--principal-claro); }
 .badge-pendiente { background: rgba(255, 255, 255, 0.07); color: var(--muted); }
 .badge-listo { background: rgba(61, 220, 151, 0.13); color: var(--ok); }
 
@@ -305,8 +310,9 @@ h2.seccion .cuenta {
 @keyframes toastEntra { from { opacity: 0; transform: translateY(16px); } }
 @keyframes toastSale { to { opacity: 0; transform: translateY(16px); } }
 
-/* ---------- Marca CEVAZ ---------- */
-.logo-cevaz {
+/* ---------- Marca del evento ---------- */
+/* Logo cargado: sobre fondo blanco. Sin logo: micrófono sobre el degradado de la marca. */
+.logo-marca {
   flex: 0 0 auto;
   display: block;
   width: 40px;
@@ -317,14 +323,19 @@ h2.seccion .cuenta {
   object-fit: contain;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
-.insignia-cevaz {
+.logo-marca.por-defecto { padding: 8px; background: var(--grad); }
+.insignia-marca {
   display: block;
   width: 112px;
   height: 112px;
   margin: 0 auto 14px;
+  padding: 14px;
   border-radius: 50%;
+  background: #fff;
+  object-fit: contain;
   box-shadow: 0 10px 40px rgba(var(--rojo-rgb), 0.25), 0 0 0 6px rgba(255, 255, 255, 0.06);
 }
+.insignia-marca.por-defecto { padding: 26px; background: var(--grad); }
 .kicker {
   margin: 0;
   font-size: 0.66rem;
@@ -333,6 +344,30 @@ h2.seccion .cuenta {
   text-transform: uppercase;
   color: var(--accent2);
 }
+
+/* ---------- Aviso del modo demo ---------- */
+.banner-demo {
+  position: relative;
+  z-index: 40;
+  padding: 8px 14px;
+  background: var(--grad-oro);
+  color: var(--sobre-destacado);
+  font-size: 0.8rem;
+  text-align: center;
+  line-height: 1.4;
+}
+.banner-demo a, .banner-demo button {
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.banner-demo span { opacity: 0.8; }
 
 /* ---------- Campos de texto ---------- */
 .campo {

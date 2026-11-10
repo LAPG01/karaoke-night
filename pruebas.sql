@@ -1,4 +1,4 @@
--- Pruebas automáticas de la base. Se pegan en Supabase > SQL Editor y se corren.
+-- Pruebas automáticas de la base (27). Se pegan en Supabase > SQL Editor y se corren.
 -- Trabajan sobre datos de prueba y al terminar SIEMPRE deshacen todo (el
 -- "error" final es a propósito: así no queda nada escrito).
 --   "PRUEBAS OK: …"     → todo bien
@@ -18,6 +18,8 @@ declare
   comp_b integer;
   h json;
   r json;
+  m json;
+  v0 integer;
   fila text;
 begin
   -- Todos los celulares de prueba entran por el WiFi del lugar (misma IP).
@@ -279,6 +281,36 @@ begin
   end if;
   ok := ok + 1;
 
+  -- ===== Marca del evento =====
+  v0 := (marca_publica() ->> 'version')::int;
+  m := guardar_marca(t, 'Noche de Talentos', ' Mi Empresa ', 'data:image/png;base64,iVBORw0KGgo=', '#7C3AED', '#22d3ee');
+  if m ->> 'evento' <> 'Noche de Talentos' or m ->> 'organizador' <> 'Mi Empresa'
+     or m ->> 'color_principal' <> '#7c3aed' or (m ->> 'version')::int <> v0 + 1
+     or (estado_publico() ->> 'marca_version')::int <> v0 + 1 then
+    raise exception 'FALLÓ guardar la marca: %', m;
+  end if;
+  m := guardar_marca(t, 'Noche de Talentos', '', null, '#7c3aed', '#22d3ee');
+  if m ->> 'logo' is null then raise exception 'FALLÓ guardar sin logo nuevo debía conservar el logo'; end if;
+  m := guardar_marca(t, 'Noche de Talentos', '', '', '#7c3aed', '#22d3ee');
+  if m ->> 'logo' is not null then raise exception 'FALLÓ quitar el logo'; end if;
+  begin
+    perform guardar_marca(t, 'Noche de Talentos', '', null, 'rojo', '#22d3ee');
+    raise exception 'FALLÓ se aceptó un color inválido';
+  exception when check_violation then null;
+  end;
+  begin
+    perform guardar_marca(t, 'Noche de Talentos', '', 'data:image/svg+xml;base64,PHN2Zz4=', '#7c3aed', '#22d3ee');
+    raise exception 'FALLÓ se aceptó un logo SVG (solo PNG, JPG o WEBP)';
+  exception when check_violation then null;
+  end;
+  begin
+    perform guardar_marca('pase-inventado', 'Hackeado', '', null, '#000000', '#000000');
+    raise exception 'FALLÓ se pudo cambiar la marca sin sesión';
+  exception when others then
+    if sqlerrm not like '%Clave incorrecta%' then raise; end if;
+  end;
+  ok := ok + 1;
+
   -- ===== Seguridad =====
   begin
     perform historial('pase-inventado');
@@ -295,8 +327,12 @@ begin
   set local role anon;
   if (select count(*) from historial_votos) <> 0
      or (select count(*) from historial_participantes) <> 0
-     or (select count(*) from votos_bloqueados) <> 0 then
+     or (select count(*) from votos_bloqueados) <> 0
+     or (select count(*) from marca) <> 0 then
     raise exception 'FALLÓ el público puede leer datos privados';
+  end if;
+  if marca_publica() ->> 'evento' is null then
+    raise exception 'FALLÓ el público no puede leer la marca por su función';
   end if;
   begin
     insert into participantes (nombre, cancion, orden) values ('Intruso', 'x', 99);
