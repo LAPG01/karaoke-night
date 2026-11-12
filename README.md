@@ -1,5 +1,7 @@
 # 🎤 Karaoke Night
 
+[![Pruebas de la base](https://github.com/LAPG01/karaoke-night/actions/workflows/pruebas.yml/badge.svg)](https://github.com/LAPG01/karaoke-night/actions/workflows/pruebas.yml)
+
 Votación en vivo para competencias de karaoke: el público entra con un QR, vota
 desde su celular y los resultados se revelan uno por uno, del último puesto al
 ganador, en todas las pantallas a la vez.
@@ -19,7 +21,7 @@ y podés romper lo que quieras. "Empezar de cero" la deja como nueva.
 > functions behind row-level security, with no direct table writes from the browser.
 > One vote per phone without sign-up (hardware fingerprint + server-side IP), flags
 > for anti-detect browsers, admin moderation, permanent history with CSV export and
-> editable branding. 27 automated database tests.
+> editable branding. 27 database tests run in CI on every push.
 > [Try the demo](https://lapg01.github.io/karaoke-night/?demo) (admin: `demo` / `demo`).
 
 <p align="center">
@@ -178,10 +180,12 @@ datos privados ni escribir directo en las tablas). Se pega en *SQL Editor* y se
 corre; trabaja con datos de prueba y al terminar **deshace todo**, por eso termina
 con un aviso en rojo a propósito: `PRUEBAS OK: 27 de 27` significa que todo anda.
 
-El esquema se verificó creándolo desde cero en un proyecto de Supabase vacío, y
-también en un Postgres común preparado como uno de Supabase
+**Corren solas en cada cambio** ([GitHub Actions](.github/workflows/pruebas.yml)):
+se levanta un Postgres vacío, se prepara como uno de Supabase
 ([`herramientas/entorno-supabase.sql`](herramientas/entorno-supabase.sql): roles de
-la API y permisos por defecto).
+la API y permisos por defecto), se crea la base con `schema.sql` y se corren las
+27 pruebas. Si algo se rompe, la insignia de arriba se pone en rojo. El esquema
+también se verificó creándolo desde cero en un proyecto de Supabase vacío.
 
 Las capturas y el GIF de este README se generan solos con
 [`herramientas/capturas.mjs`](herramientas/capturas.mjs), que recorre la demo en un
@@ -200,7 +204,8 @@ Chromium sin ventana (Node 22+, Chromium y ffmpeg).
 | `icono.svg` | Logo neutro por defecto |
 | `docs/` | Capturas y GIF |
 | `herramientas/capturas.mjs` | Genera las capturas y el GIF |
-| `herramientas/entorno-supabase.sql` | Prepara un Postgres común para correr las pruebas fuera de Supabase |
+| `herramientas/entorno-supabase.sql` | Prepara un Postgres común para las pruebas automáticas |
+| `.github/workflows/pruebas.yml` | Corre las pruebas en cada cambio |
 
 ## Ideas a futuro
 

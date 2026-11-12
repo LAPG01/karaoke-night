@@ -1,0 +1,44 @@
+# En cada cambio: crea la base desde cero con schema.sql y corre las pruebas de pruebas.sql.
+name: Pruebas de la base
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar Postgres como uno de Supabase
+        run: psql -q -v ON_ERROR_STOP=1 -f herramientas/entorno-supabase.sql
+
+      - name: Crear la base desde cero
+        run: psql -q -v ON_ERROR_STOP=1 -f schema.sql
+
+      # pruebas.sql termina SIEMPRE con un error a propósito para deshacer todo:
+      # se da por bueno solo si ese error es "PRUEBAS OK".
+      - name: Correr las pruebas
+        run: |
+          salida=$(psql -f pruebas.sql 2>&1 || true)
+          echo "$salida"
+          echo "$salida" | grep -q "PRUEBAS OK"
