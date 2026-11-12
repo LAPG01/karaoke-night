@@ -6,8 +6,10 @@ Votación en vivo para competencias de karaoke: el público entra con un QR, vot
 desde su celular y los resultados se revelan uno por uno, del último puesto al
 ganador, en todas las pantallas a la vez.
 
-Lo diseñé y dirigí para un evento real en **CEVAZ**, con 100–200 personas votando
-desde sus celulares. La implementación la hice con asistencia de IA (Claude).
+Lo diseñé y dirigí para un evento real en **CEVAZ**: unas **60 personas** votaron
+desde sus celulares por 10 participantes, con **53 votos** registrados. Está
+preparado para hasta 200 personas. La implementación la hice con asistencia de IA
+(Claude).
 
 **▶ [Probar la demo](https://lapg01.github.io/karaoke-night/?demo)** · **[Panel de admin de la demo](https://lapg01.github.io/karaoke-night/admin.html?demo)** (usuario y contraseña: `demo`)
 
@@ -15,8 +17,9 @@ La demo corre entera en tu navegador, con datos inventados: no toca la base real
 y podés romper lo que quieras. "Empezar de cero" la deja como nueva.
 
 > **In English:** a live voting web app for karaoke competitions, designed and
-> directed by me for a real event (100–200 people voting from their phones via QR)
-> and built with AI assistance (Claude). Static front-end on GitHub Pages; all
+> directed by me for a real event (about 60 people voting from their phones via QR,
+> 10 contestants, 53 votes; built to handle up to 200) and built with AI assistance
+> (Claude). Static front-end on GitHub Pages; all
 > business logic and security live in Postgres (Supabase) as `SECURITY DEFINER`
 > functions behind row-level security, with no direct table writes from the browser.
 > One vote per phone without sign-up (hardware fingerprint + server-side IP), flags
@@ -114,7 +117,7 @@ flowchart LR
 ## Decisiones y límites
 
 - **El público consulta cada ~4 s en vez de usar tiempo real.** El plan gratis de
-  Supabase permite 200 conexiones en vivo, justo el tamaño del evento. Cada celular
+  Supabase permite 200 conexiones en vivo, justo el máximo para el que lo preparé. Cada celular
   pide el estado completo en **una sola consulta**, con un poco de azar para que no
   lleguen todos juntos, no redibuja si nada cambió y consulta mucho menos con la
   pantalla apagada. Medido: 100 consultas simultáneas responden en ~1 s. El
